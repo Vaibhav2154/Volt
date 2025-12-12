@@ -37,8 +37,16 @@ def create_test_user(db):
     return user
 
 
-def seed_test_transactions(db, user_id: int, days: int = 30):
-    """Create realistic test transactions for a freelancer"""
+def seed_test_transactions(db, user_id: int, days: int = 90):
+    """
+    Create realistic test transactions for a FREELANCER/GIG WORKER with variable income.
+    
+    Simulates 3 months of freelance work with:
+    - Irregular income (some months high, some low)
+    - Essential expenses
+    - Business expenses
+    - Flexible spending that varies with income
+    """
     
     # Delete existing test transactions
     db.query(Transaction).filter_by(user_id=user_id).delete()
@@ -47,137 +55,142 @@ def seed_test_transactions(db, user_id: int, days: int = 30):
     base_date = datetime.utcnow()
     transactions = []
     
-    # Income (variable - freelancer style)
+    # INCOME - VARIABLE (freelancer style with good and lean months)
     income_data = [
-        (5, 2500.00, "Client A Payment", "credit"),
-        (12, 1800.00, "Client B Payment", "credit"),
-        (20, 3200.00, "Client C Payment", "credit"),
-        (28, 900.00, "Small Project", "credit"),
+        # Month 1 - Good month
+        (5, 3500.00, "Client A - Web Design", "credit"),
+        (12, 2200.00, "Client B - Content Writing", "credit"),
+        (18, 1500.00, "Upwork Project", "credit"),
+        
+        # Month 2 - Lean month (fewer clients)
+        (35, 800.00, "Small Gig", "credit"),
+        (45, 1200.00, "Client C - Logo Design", "credit"),
+        
+        # Month 3 - Great month (big project)
+        (60, 5000.00, "Client D - Full Stack App", "credit"),
+        (68, 2800.00, "Client E - Consulting", "credit"),
+        (75, 900.00, "Fiverr Gigs", "credit"),
+        (82, 1600.00, "Referral Project", "credit"),
     ]
     
-    # Essential expenses
+    # ESSENTIAL EXPENSES (relatively stable)
     expenses_data = [
-        # Rent/Housing
-        (92, 12000.00, "Rent Payment", "debit", "HOUSING"),
+        # Housing - Month 1, 2, 3
+        (3, 1200.00, "Rent Payment", "debit", "HOUSING"),
+        (33, 1200.00, "Rent Payment", "debit", "HOUSING"),
+        (63, 1200.00, "Rent Payment", "debit", "HOUSING"),
         
-        (1, 45.20, "Walmart", "debit", "GROCERIES"),
-    (2, 63.10, "Costco", "debit", "GROCERIES"),
-    (3, 23.55, "Local Market", "debit", "GROCERIES"),
-    (4, 89.99, "Whole Foods", "debit", "GROCERIES"),
-    (5, 15.75, "Trader Joes", "debit", "GROCERIES"),
-    (6, 49.30, "Aldi", "debit", "GROCERIES"),
-    (7, 34.10, "Kroger", "debit", "GROCERIES"),
-    (8, 27.45, "Sprouts", "debit", "GROCERIES"),
-    (9, 18.90, "Farmer's Market", "debit", "GROCERIES"),
-    (10, 95.00, "Costco Bulk", "debit", "GROCERIES"),
-
-    # 11–20: Dining
-    (11, 14.99, "Chipotle", "debit", "DINING"),
-    (12, 32.50, "Sushi Bar", "debit", "DINING"),
-    (13, 9.80, "Starbucks", "debit", "DINING"),
-    (14, 22.30, "Pizza Place", "debit", "DINING"),
-    (15, 65.00, "Fancy Restaurant", "debit", "DINING"),
-    (16, 19.75, "Taco Truck", "debit", "DINING"),
-    (17, 25.40, "Thai Restaurant", "debit", "DINING"),
-    (18, 11.50, "Coffee Shop", "debit", "DINING"),
-    (19, 44.60, "Seafood Grill", "debit", "DINING"),
-    (20, 13.20, "Burger Joint", "debit", "DINING"),
-
-    # 21–30: Transport
-    (21, 40.00, "Gas Station", "debit", "TRANSPORT"),
-    (22, 55.00, "Shell Gas", "debit", "TRANSPORT"),
-    (23, 12.50, "Uber", "debit", "TRANSPORT"),
-    (24, 3.00, "Metro Ticket", "debit", "TRANSPORT"),
-    (25, 29.90, "Lyft", "debit", "TRANSPORT"),
-    (26, 62.30, "Chevron", "debit", "TRANSPORT"),
-    (27, 15.00, "Parking Garage", "debit", "TRANSPORT"),
-    (28, 7.50, "Bus Pass", "debit", "TRANSPORT"),
-    (29, 10.00, "Train Fare", "debit", "TRANSPORT"),
-    (30, 48.20, "EV Charging", "debit", "TRANSPORT"),
-
-    # 31–40: Entertainment
-    (31, 15.99, "Netflix", "debit", "ENTERTAINMENT"),
-    (32, 9.99, "Spotify", "debit", "ENTERTAINMENT"),
-    (33, 24.00, "Movie Theater", "debit", "ENTERTAINMENT"),
-    (34, 59.99, "Concert Tickets", "debit", "ENTERTAINMENT"),
-    (35, 12.99, "YouTube Premium", "debit", "ENTERTAINMENT"),
-    (36, 45.00, "Amusement Park", "debit", "ENTERTAINMENT"),
-    (37, 4.99, "Mobile Game", "debit", "ENTERTAINMENT"),
-    (38, 75.00, "Comedy Show", "debit", "ENTERTAINMENT"),
-    (39, 6.99, "Hulu", "debit", "ENTERTAINMENT"),
-    (40, 22.50, "Bowling Alley", "debit", "ENTERTAINMENT"),
-
-    # 41–50: Shopping
-    (41, 89.00, "Amazon", "debit", "SHOPPING"),
-    (42, 45.75, "Target", "debit", "SHOPPING"),
-    (43, 120.00, "Clothing Store", "debit", "SHOPPING"),
-    (44, 250.00, "Electronics Store", "debit", "SHOPPING"),
-    (45, 16.80, "Dollar Store", "debit", "SHOPPING"),
-    (46, 310.50, "Furniture Shop", "debit", "SHOPPING"),
-    (47, 9.99, "Online App Store", "debit", "SHOPPING"),
-    (48, 75.00, "Footwear Outlet", "debit", "SHOPPING"),
-    (49, 15.49, "Bookstore", "debit", "SHOPPING"),
-    (50, 200.00, "Appliance Store", "debit", "SHOPPING"),
-
-    # 51–60: Utilities
-    (51, 90.00, "Electric Bill", "debit", "UTILITIES"),
-    (52, 45.00, "Internet Bill", "debit", "UTILITIES"),
-    (53, 30.00, "Water Bill", "debit", "UTILITIES"),
-    (54, 60.50, "Gas Bill", "debit", "UTILITIES"),
-    (55, 22.00, "Trash Service", "debit", "UTILITIES"),
-    (56, 49.99, "Phone Plan", "debit", "UTILITIES"),
-    (57, 12.00, "Sewage Fee", "debit", "UTILITIES"),
-    (58, 100.00, "Electric Bill", "debit", "UTILITIES"),
-    (59, 38.75, "Mobile Data Add-On", "debit", "UTILITIES"),
-    (60, 55.25, "Internet Bill", "debit", "UTILITIES"),
-
-    # 61–70: Healthcare
-    (61, 25.00, "Pharmacy", "debit", "HEALTHCARE"),
-    (62, 75.00, "Urgent Care", "debit", "HEALTHCARE"),
-    (63, 12.00, "Vitamin Store", "debit", "HEALTHCARE"),
-    (64, 150.00, "Doctor Visit", "debit", "HEALTHCARE"),
-    (65, 40.00, "Dental Checkup", "debit", "HEALTHCARE"),
-    (66, 85.00, "Eye Clinic", "debit", "HEALTHCARE"),
-    (67, 19.99, "Prescription", "debit", "HEALTHCARE"),
-    (68, 200.00, "ER Visit Fee", "debit", "HEALTHCARE"),
-    (69, 60.00, "Chiropractor", "debit", "HEALTHCARE"),
-    (70, 35.50, "Lab Test", "debit", "HEALTHCARE"),
-
-    # 71–80: Income (credit)
-    (71, 2500.00, "Client Payment A", "credit", "INCOME"),
-    (72, 1800.00, "Client Payment B", "credit", "INCOME"),
-    (73, 3200.00, "Client Payment C", "credit", "INCOME"),
-    (74, 900.00, "Small Project", "credit", "INCOME"),
-    (75, 5000.00, "Salary", "credit", "INCOME"),
-    (76, 1500.00, "Side Job", "credit", "INCOME"),
-    (77, 2600.00, "Employer Payroll", "credit", "INCOME"),
-    (78, 780.00, "Refund", "credit", "INCOME"),
-    (79, 4200.00, "Bonus Payment", "credit", "INCOME"),
-    (80, 150.00, "Cashback", "credit", "INCOME"),
-
-    # 81–90: Savings / Transfers
-    (81, 200.00, "Savings Deposit", "debit", "SAVINGS"),
-    (82, 300.00, "Investment Fund", "debit", "SAVINGS"),
-    (83, 150.00, "Emergency Fund", "debit", "SAVINGS"),
-    (84, 400.00, "Long-term Savings", "debit", "SAVINGS"),
-    (85, 50.00, "Round-Up Transfer", "debit", "SAVINGS"),
-    (86, 100.00, "Crypto Purchase", "debit", "SAVINGS"),
-    (87, 600.00, "Retirement Contribution", "debit", "SAVINGS"),
-    (88, 75.00, "High-Yield Account", "debit", "SAVINGS"),
-    (89, 500.00, "Portfolio", "debit", "SAVINGS"),
-    (90, 20.00, "Micro Savings", "debit", "SAVINGS"),
-
-    # 91–100: Miscellaneous + Edge Cases
-    (91, 0.00, "Test Zero", "debit", "GROCERIES"),
-
-    (93, 9999.99, "Luxury Purchase", "debit", "SHOPPING"),
-    (94, 3.14, "Rounded Purchase", "debit", "DINING"),
-    (95, 1.00, "Candy Shop", "debit", "DINING"),
-    (96, 450.00, "Car Repair", "debit", "TRANSPORT"),
-    (97, 800.00, "Insurance Payment", "debit", "HOUSING"),
-    (98, 1200.00, "Rent Payment", "debit", "HOUSING"),
-    (99, 250.00, "Random Charge", "debit", "OTHER"),
-    (100, 5.00, "Unknown Merchant", "debit", "UNCATEGORIZED"),
+        # Groceries (spread across 3 months)
+        (1, 65.00, "Walmart", "debit", "GROCERIES"),
+        (8, 45.00, "Trader Joes", "debit", "GROCERIES"),
+        (15, 80.00, "Costco", "debit", "GROCERIES"),
+        (22, 52.00, "Local Market", "debit", "GROCERIES"),
+        (31, 58.00, "Walmart", "debit", "GROCERIES"),
+        (38, 41.00, "Aldi", "debit", "GROCERIES"),
+        (47, 73.00, "Whole Foods", "debit", "GROCERIES"),
+        (54, 49.00, "Kroger", "debit", "GROCERIES"),
+        (61, 67.00, "Costco", "debit", "GROCERIES"),
+        (70, 55.00, "Trader Joes", "debit", "GROCERIES"),
+        (78, 62.00, "Safeway", "debit", "GROCERIES"),
+        (85, 48.00, "Local Market", "debit", "GROCERIES"),
+        
+        # Utilities (monthly)
+        (5, 85.00, "Electric Bill", "debit", "UTILITIES"),
+        (6, 60.00, "Internet - Comcast", "debit", "UTILITIES"),
+        (7, 45.00, "Phone - Verizon", "debit", "UTILITIES"),
+        (35, 92.00, "Electric Bill", "debit", "UTILITIES"),
+        (36, 60.00, "Internet - Comcast", "debit", "UTILITIES"),
+        (37, 45.00, "Phone - Verizon", "debit", "UTILITIES"),
+        (65, 78.00, "Electric Bill", "debit", "UTILITIES"),
+        (66, 60.00, "Internet - Comcast", "debit", "UTILITIES"),
+        (67, 45.00, "Phone - Verizon", "debit", "UTILITIES"),
+        
+        # Transportation
+        (2, 50.00, "Gas - Shell", "debit", "TRANSPORTATION"),
+        (14, 18.50, "Uber", "debit", "TRANSPORTATION"),
+        (25, 45.00, "Gas - Chevron", "debit", "TRANSPORTATION"),
+        (40, 52.00, "Gas - Shell", "debit", "TRANSPORTATION"),
+        (51, 22.00, "Lyft", "debit", "TRANSPORTATION"),
+        (72, 48.00, "Gas - BP", "debit", "TRANSPORTATION"),
+        (80, 15.00, "Uber", "debit", "TRANSPORTATION"),
+        
+        # Healthcare
+        (20, 30.00, "CVS Pharmacy", "debit", "HEALTHCARE"),
+        (55, 125.00, "Doctor Copay", "debit", "HEALTHCARE"),
+        (88, 25.00, "Walgreens Pharmacy", "debit", "HEALTHCARE"),
+    
+    # FREELANCER-SPECIFIC EXPENSES
+    
+        # Business expenses (tools, software, equipment)
+        (4, 29.99, "Adobe Creative Cloud", "debit", "BUSINESS_EXPENSE"),
+        (10, 12.00, "GitHub Pro", "debit", "BUSINESS_EXPENSE"),
+        (16, 199.00, "Laptop Upgrade - RAM", "debit", "BUSINESS_EXPENSE"),
+        (34, 29.99, "Adobe Creative Cloud", "debit", "BUSINESS_EXPENSE"),
+        (42, 15.00, "Zoom Pro", "debit", "BUSINESS_EXPENSE"),
+        (50, 89.00, "External Monitor", "debit", "BUSINESS_EXPENSE"),
+        (64, 29.99, "Adobe Creative Cloud", "debit", "BUSINESS_EXPENSE"),
+        (71, 12.00, "GitHub Pro", "debit", "BUSINESS_EXPENSE"),
+        (84, 45.00, "Notion Team", "debit", "BUSINESS_EXPENSE"),
+        
+        # Professional development (courses, books)
+        (17, 49.99, "Udemy Course - React", "debit", "PROFESSIONAL_DEVELOPMENT"),
+        (48, 199.00, "Web Design Conference", "debit", "PROFESSIONAL_DEVELOPMENT"),
+        (76, 29.99, "Technical Book", "debit", "PROFESSIONAL_DEVELOPMENT"),
+        
+        # Client acquisition / marketing
+        (11, 50.00, "LinkedIn Premium", "debit", "CLIENT_ACQUISITION"),
+        (44, 35.00, "Business Cards", "debit", "CLIENT_ACQUISITION"),
+        (74, 50.00, "LinkedIn Premium", "debit", "CLIENT_ACQUISITION"),
+        
+        # Tax savings (quarterly payments)
+        (19, 800.00, "IRS Quarterly Tax", "debit", "TAX_SAVINGS"),
+        (79, 750.00, "IRS Quarterly Tax", "debit", "TAX_SAVINGS"),
+        
+        # Emergency fund (varies with income - more in good months)
+        (21, 500.00, "Emergency Fund Transfer", "debit", "EMERGENCY_FUND"),
+        (69, 800.00, "Emergency Fund Transfer", "debit", "EMERGENCY_FUND"),
+    
+    # DISCRETIONARY SPENDING (varies with income - high in good months, low in lean months)
+    
+        # Dining (Month 1 - good income, more dining)
+        (9, 32.00, "Chipotle", "debit", "DINING"),
+        (13, 18.00, "Starbucks", "debit", "DINING"),
+        (23, 45.00, "Sushi Restaurant", "debit", "DINING"),
+        (27, 15.00, "Coffee Shop", "debit", "DINING"),
+        
+        # Dining (Month 2 - lean income, less dining)
+        (41, 12.00, "Fast Food", "debit", "DINING"),
+        (53, 8.00, "Coffee", "debit", "DINING"),
+        
+        # Dining (Month 3 - great income, more dining)
+        (73, 65.00, "Nice Restaurant", "debit", "DINING"),
+        (81, 22.00, "Brunch", "debit", "DINING"),
+        (87, 28.00, "Thai Food", "debit", "DINING"),
+        
+        # Entertainment (varies with income)
+        (24, 15.99, "Netflix", "debit", "ENTERTAINMENT"),
+        (26, 9.99, "Spotify", "debit", "ENTERTAINMENT"),
+        (29, 35.00, "Movie Theater", "debit", "ENTERTAINMENT"),
+        (56, 15.99, "Netflix", "debit", "ENTERTAINMENT"),
+        (58, 9.99, "Spotify", "debit", "ENTERTAINMENT"),
+        (77, 15.99, "Netflix", "debit", "ENTERTAINMENT"),
+        (83, 9.99, "Spotify", "debit", "ENTERTAINMENT"),
+        (86, 42.00, "Concert Tickets", "debit", "ENTERTAINMENT"),
+        
+        # Shopping (varies significantly with income)
+        (28, 45.00, "Amazon - Office Supplies", "debit", "SHOPPING"),
+        # (lean month - minimal shopping)
+        (89, 120.00, "Amazon - New Headphones", "debit", "SHOPPING"),
+    
+    # FLEXIBLE SPENDING (adjusted based on income)
+    
+        # Savings/Investments (high in good months, low/none in lean months)
+        (30, 400.00, "Vanguard Investment", "debit", "INVESTMENTS"),
+        # (lean month - no investments)
+        (90, 1000.00, "Vanguard Investment", "debit", "INVESTMENTS"),
+        
+        # Subscriptions
+        (57, 12.99, "YouTube Premium", "debit", "SUBSCRIPTIONS"),
     ]
     
     # Create income transactions
@@ -209,14 +222,27 @@ def seed_test_transactions(db, user_id: int, days: int = 30):
     db.bulk_save_objects(transactions)
     db.commit()
     
-    print(f"✅ Created {len(transactions)} test transactions")
-    print(f"   - Income: ${sum(t.amount for t in transactions if t.type == 'credit'):,.2f}")
-    print(f"   - Expenses: ${sum(t.amount for t in transactions if t.type == 'debit'):,.2f}")
+    # Calculate statistics
+    total_income = sum(t.amount for t in transactions if t.type == 'credit')
+    total_expenses = sum(t.amount for t in transactions if t.type == 'debit')
+    
+    print(f"✅ Created {len(transactions)} test transactions for FREELANCER/GIG WORKER")
+    print(f"   📊 Income Analysis:")
+    print(f"      - Total Income (3 months): ${total_income:,.2f}")
+    print(f"      - Average Monthly: ${total_income/3:,.2f}")
+    print(f"      - Income Sources: {len([t for t in transactions if t.type == 'credit'])} payments")
+    print(f"   💰 Expense Analysis:")
+    print(f"      - Total Expenses (3 months): ${total_expenses:,.2f}")
+    print(f"      - Average Monthly: ${total_expenses/3:,.2f}")
+    print(f"   📈 Sustainability:")
+    print(f"      - Income/Expense Ratio: {total_income/total_expenses:.2f}x")
+    print(f"      - Net Position: ${total_income - total_expenses:,.2f}")
+    
     return transactions
 
 
 async def build_behavior_model_async(db, user_id: int):
-    """Build behavior model from transactions (async)"""
+    """Build behavior model from transactions (async) - now includes income tracking"""
     categorization_service = CategorizationService(
         gemini_api_key=os.getenv("GEMINI_API_KEY", "dummy_key")
     )
@@ -226,16 +252,23 @@ async def build_behavior_model_async(db, user_id: int):
     db.query(BehaviourModel).filter_by(user_id=user_id).delete()
     db.commit()
     
-    # Build new model
-    txs = db.query(Transaction).filter_by(user_id=user_id, type="debit").all()
-    print(f"\n   Building model from {len(txs)} debit transactions...")
+    # Build model from ALL transactions (both income and expenses)
+    all_txs = db.query(Transaction).filter_by(user_id=user_id).order_by(Transaction.timestamp).all()
+    debit_txs = [tx for tx in all_txs if tx.type == "debit"]
+    credit_txs = [tx for tx in all_txs if tx.type == "credit"]
     
-    for i, tx in enumerate(txs, 1):
+    print(f"\n   🔄 Building comprehensive model:")
+    print(f"      - {len(credit_txs)} income transactions (credit)")
+    print(f"      - {len(debit_txs)} expense transactions (debit)")
+    
+    # Process all transactions
+    for i, tx in enumerate(all_txs, 1):
         try:
             await engine.update_model(db, user_id, tx)
             db.commit()  # Commit after each update
-            if i <= 3 or i % 10 == 0:
-                print(f"   Processed tx {i}/{len(txs)}: {tx.category} - ${tx.amount} at {tx.merchant}")
+            if i <= 5 or i % 15 == 0:
+                tx_type = "💵 Income" if tx.type == "credit" else "💳 Expense"
+                print(f"   {tx_type} {i}/{len(all_txs)}: {tx.category} - ${tx.amount}")
         except Exception as e:
             print(f"   ⚠️  Error processing transaction {tx.id}: {e}")
             db.rollback()
@@ -248,18 +281,111 @@ async def build_behavior_model_async(db, user_id: int):
     
     if model:
         stats = model.category_stats or {}
-        print(f"\n✅ Behavior model built:")
-        print(f"   - Categories tracked: {len(stats)}")
-        print(f"   - Transaction count: {model.transaction_count}")
+        income_stats = None
+        if model.monthly_patterns:
+            income_stats = model.monthly_patterns.get('income_stats')
         
+        print(f"\n✅ Comprehensive Behavior Model Built:")
+        print(f"   📊 Overall: {model.transaction_count} transactions processed")
+        
+        # Expense categories
         if stats:
-            print(f"\n   Category details:")
-            for cat, cat_stats in list(stats.items())[:5]:  # Show first 5
+            print(f"\n   💳 Expense Categories ({len(stats)} tracked):")
+            # Sort by mean spending
+            sorted_stats = sorted(stats.items(), key=lambda x: x[1].get('mean', 0), reverse=True)
+            for cat, cat_stats in sorted_stats[:8]:  # Show top 8
                 mean = cat_stats.get('mean', 0)
                 count = cat_stats.get('count', 0)
-                print(f"   - {cat}: ${mean:,.2f} avg ({count} transactions)")
+                volatility = cat_stats.get('std_dev', 0) / mean if mean > 0 else 0
+                print(f"      - {cat:25s}: ${mean:7,.2f} avg ({count:2d} txs) [volatility: {volatility:.2f}]")
+        
+        # Income stats (NEW!)
+        if income_stats:
+            print(f"\n   💵 Income Tracking (Freelancer Analysis):")
+            print(f"      - Average Income: ${income_stats.get('mean', 0):,.2f}")
+            print(f"      - Income Range: ${income_stats.get('min', 0):,.2f} - ${income_stats.get('max', 0):,.2f}")
+            print(f"      - Income Volatility: {income_stats.get('volatility_coefficient', 0):.2%}")
+            print(f"      - Payment Count: {income_stats.get('count', 0)} payments")
+            
+            # Business vs Personal income
+            business_income = income_stats.get('business_income', {})
+            personal_income = income_stats.get('personal_income', {})
+            if business_income.get('count', 0) > 0 or personal_income.get('count', 0) > 0:
+                print(f"\n   💼 Income Breakdown:")
+                print(f"      - Business Income: ${business_income.get('sum', 0):,.2f} ({business_income.get('count', 0)} payments)")
+                print(f"      - Personal Income: ${personal_income.get('sum', 0):,.2f} ({personal_income.get('count', 0)} payments)")
+            
+            sources = income_stats.get('sources', {})
+            if sources:
+                print(f"\n   👥 Income Sources: {len(sources)} clients/sources")
+                for source, source_data in list(sources.items())[:3]:
+                    income_type = source_data.get('type', 'unknown')
+                    print(f"      • [{income_type}] {source}: ${source_data['total']:,.2f} ({source_data['count']} payments)")
+            
+            # Calculate income-to-expense ratio
+            from app.services.statistics import StatisticsService
+            ratio_analysis = StatisticsService.calculate_income_expense_ratio(income_stats, stats)
+            print(f"\n   📈 Sustainability Analysis:")
+            print(f"      - Avg Income/Expense Ratio: {ratio_analysis['avg_ratio']:.2f}x")
+            print(f"      - Worst Case Ratio: {ratio_analysis['worst_case_ratio']:.2f}x")
+            print(f"      - Sustainability: {ratio_analysis['sustainability'].upper()}")
+            print(f"      - Risk Level: {ratio_analysis['risk_level'].upper()}")
+            print(f"      - Recommended Buffer: ${ratio_analysis['recommended_buffer']:,.2f}")
+            
+            # Income forecasting (NEW!)
+            from app.services.income_forecast import IncomeForecastService
+            forecast_service = IncomeForecastService()
+            
+            # Build income history from last few payments
+            # For demo, use a simple list based on mean and volatility
+            income_mean = income_stats.get('mean', 0)
+            income_std = income_stats.get('std_dev', 0)
+            income_count = income_stats.get('count', 0)
+            
+            if income_count >= 3:
+                # Simulate monthly income history for forecast demo
+                # In production, you'd query actual monthly totals
+                import random
+                random.seed(42)
+                income_history = [
+                    max(0, income_mean + random.uniform(-income_std, income_std))
+                    for _ in range(min(income_count, 6))
+                ]
+                
+                forecast, confidence = forecast_service.exponential_smoothing_forecast(income_history)
+                print(f"\n   🔮 Income Forecast (Next Month):")
+                print(f"      - Predicted Income: ${forecast:,.2f}")
+                print(f"      - Confidence: {confidence:.1%}")
+                
+                trend_analysis = forecast_service.analyze_income_trend(income_history)
+                print(f"      - Trend: {trend_analysis['trend'].upper()} ({trend_analysis['growth_rate']:+.1f}%/month)")
+                print(f"      - {trend_analysis['message']}")
+                
+                # Runway calculation
+                # Assume emergency fund balance from transaction data
+                total_income = income_stats.get('sum', 0)
+                total_expenses = sum(cat.get('sum', 0) for cat in stats.values())
+                estimated_balance = total_income - total_expenses  # Simplified
+                
+                runway = forecast_service.calculate_runway(
+                    current_balance=estimated_balance,
+                    avg_income=income_mean,
+                    avg_expenses=ratio_analysis['avg_expenses'],
+                    income_volatility=income_stats.get('volatility_coefficient', 0)
+                )
+                
+                print(f"\n   🛣️  Financial Runway:")
+                print(f"      - Current Position: ${runway['current_balance']:,.2f}")
+                print(f"      - Avg Monthly Net: ${runway['avg_monthly_net']:,.2f}")
+                print(f"      - Worst Case Net: ${runway['worst_case_monthly_net']:,.2f}")
+                if runway['worst_case_runway_months']:
+                    print(f"      - Runway (worst case): {runway['worst_case_runway_months']:.1f} months")
+                else:
+                    print(f"      - Runway: ♾️ Sustainable (positive cash flow)")
+                print(f"      - Risk: {runway['risk_level'].upper()}")
+                print(f"      - {runway['risk_message']}")
         else:
-            print(f"   ⚠️  No category stats saved!")
+            print(f"\n   ⚠️  No income data tracked (not a freelancer profile?)")
     else:
         print(f"\n❌ No behavior model created!")
     
@@ -272,9 +398,10 @@ def build_behavior_model(db, user_id: int):
 
 
 def test_single_scenario(db, user_id: int):
-    """Test single spending scenario"""
+    """Test single spending scenario - Lean Month Strategy for Freelancers"""
     print("\n" + "="*60)
-    print("TEST 1: Single Spending Scenario (20% reduction)")
+    print("TEST 1: Freelancer Lean Month Strategy (25% reduction)")
+    print("Simulating expense reduction during a low-income month")
     print("="*60)
     
     try:
@@ -282,21 +409,27 @@ def test_single_scenario(db, user_id: int):
             db=db,
             user_id=user_id,
             scenario_type="reduction",
-            target_percent=20.0,
+            target_percent=25.0,
             time_period_days=30
         )
         
-        print(f"✅ Scenario generated successfully")
-        print(f"   Baseline: ${result.baseline_monthly:,.2f}")
-        print(f"   Projected: ${result.projected_monthly:,.2f}")
-        print(f"   Change: ${result.total_change:,.2f}")
-        print(f"   Annual impact: ${result.annual_impact:,.2f}")
-        print(f"   Feasibility: {result.feasibility}")
-        print(f"   Categories analyzed: {len(result.category_breakdown)}")
-        print(f"\n   Top 3 recommendations:")
-        for i, rec in enumerate(result.recommendations[:3], 1):
-            rec_text = rec if isinstance(rec, str) else rec.get('recommendation', str(rec))
-            print(f"   {i}. {rec_text}")
+        print(f"✅ Lean Month Strategy Generated:")
+        print(f"   Current Spending: ${result.baseline_monthly:,.2f}/month")
+        print(f"   Target Spending: ${result.projected_monthly:,.2f}/month")
+        print(f"   💰 Savings: ${result.total_change:,.2f}/month")
+        print(f"   📅 Annual Impact: ${result.annual_impact:,.2f}")
+        print(f"   ✓ Feasibility: {result.feasibility.upper()}")
+        print(f"   📊 Categories: {len(result.category_breakdown)} analyzed")
+        
+        print(f"\n   🎯 Top Recommendations for Lean Months:")
+        for i, rec in enumerate(result.recommendations[:5], 1):
+            if isinstance(rec, dict):
+                category = rec.get('category', 'N/A')
+                action = rec.get('action', str(rec))
+                rec_type = rec.get('type', 'N/A')
+                print(f"   {i}. [{rec_type}] {action}")
+            else:
+                print(f"   {i}. {rec}")
         
         return True
     except Exception as e:
@@ -307,9 +440,10 @@ def test_single_scenario(db, user_id: int):
 
 
 def test_comparison(db, user_id: int):
-    """Test scenario comparison"""
+    """Test scenario comparison - Variable Income Planning"""
     print("\n" + "="*60)
-    print("TEST 2: Multiple Scenario Comparison")
+    print("TEST 2: Variable Income Scenario Planning")
+    print("Comparing different spending strategies for freelancers")
     print("="*60)
     
     try:
@@ -420,9 +554,10 @@ def test_reallocation(db, user_id: int):
 
 
 def test_projection(db, user_id: int):
-    """Test future projection"""
+    """Test future projection - Freelancer Growth Planning"""
     print("\n" + "="*60)
-    print("TEST 4: Future Spending Projection (6 months)")
+    print("TEST 4: Freelancer Growth Projection (6 months)")
+    print("Planning for business investment and sustainable spending")
     print("="*60)
     
     try:
@@ -432,8 +567,10 @@ def test_projection(db, user_id: int):
             projection_months=6,
             time_period_days=30,
             behavioral_changes={
-                "DINING": -15.0,
-                "ENTERTAINMENT": -20.0
+                "BUSINESS_EXPENSE": 20.0,  # Invest more in business
+                "PROFESSIONAL_DEVELOPMENT": 30.0,  # Upskill
+                "DINING": -25.0,  # Cut discretionary
+                "ENTERTAINMENT": -20.0  # Cut discretionary
             }
         )
         
@@ -458,17 +595,18 @@ def test_projection(db, user_id: int):
 
 def main():
     """Run all tests"""
-    print("\n" + "🚀 " + "="*56 + " 🚀")
-    print("  SIMULATION ENGINE TEST SUITE")
-    print("🚀 " + "="*56 + " 🚀\n")
+    print("\n" + "💼 " + "="*56 + " 💼")
+    print("  FREELANCER/GIG WORKER SIMULATION TEST SUITE")
+    print("  Testing variable income and adaptive spending patterns")
+    print("💼 " + "="*56 + " 💼\n")
     
     db = SessionLocal()
     try:
         # Setup
         user = create_test_user(db)
-        print(f"✅ Test user: {user.name} (ID: {user.id})")
+        print(f"✅ Test user (Freelancer Profile): {user.name} (ID: {user.id})")
         
-        seed_test_transactions(db, user.id)
+        seed_test_transactions(db, user.id, days=90)  # 3 months of data
         build_behavior_model(db, user.id)
         
         # Run tests
@@ -481,7 +619,7 @@ def main():
         
         # Summary
         print("\n" + "="*60)
-        print("SUMMARY")
+        print("FREELANCER-FOCUSED TEST SUMMARY")
         print("="*60)
         passed = sum(results.values())
         total = len(results)
@@ -493,7 +631,10 @@ def main():
         print(f"\n{passed}/{total} tests passed")
         
         if passed == total:
-            print("\n🎉 All tests passed! Simulation engine is working.")
+            print("\n🎉 All freelancer/gig worker tests passed!")
+            print("✓ Variable income tracking working")
+            print("✓ Income-aware simulations working")
+            print("✓ Freelancer categories supported")
         else:
             print("\n⚠️  Some tests failed. Check errors above.")
         

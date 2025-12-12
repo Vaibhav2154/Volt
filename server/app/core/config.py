@@ -6,7 +6,6 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str
     access_token_expire_minutes: int
-    gemini_api_key: str
     
     # Redis configuration
     redis_host: str = "redis"
@@ -24,6 +23,9 @@ class Settings(BaseSettings):
     
     # Worker configuration
     default_user_id: int = 1
+    
+    # Gemini API Key
+    gemini_api_key: str
     
     @property
     def redis_url(self) -> str:

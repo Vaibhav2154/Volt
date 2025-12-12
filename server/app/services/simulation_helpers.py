@@ -12,9 +12,15 @@ def generate_recommendations(
     category_analysis: Dict[str, CategoryAnalysis], 
     impulse_score: float,
     scenario_type: str,
-    target_categories: Optional[List[str]] = None
+    target_categories: Optional[List[str]] = None,
+    income_stats: Optional[Dict] = None
 ) -> list[dict]:
-    """Generate actionable recommendations"""
+    """
+    Generate actionable recommendations for freelancers/gig workers.
+    Now includes income-aware advice.
+    """
+    from app.utils.constants import FREELANCER_CATEGORIES, FLEXIBLE_CATEGORIES
+    
     recommendations = []
     
     if scenario_type == "reduction":
@@ -43,6 +49,30 @@ def generate_recommendations(
                 "difficulty": "moderate",
                 "type": "behavioral"
             })
+        
+        # Freelancer-specific: Check if income is variable
+        if income_stats:
+            volatility = income_stats.get('volatility_coefficient', 0)
+            if volatility > 0.4:
+                recommendations.append({
+                    "category": "INCOME_VARIABILITY",
+                    "action": "With variable income, prioritize building a 3-6 month emergency fund",
+                    "potential_impact": 0,
+                    "difficulty": "moderate",
+                    "type": "freelancer_advice"
+                })
+            
+            # Check if flexible categories exist
+            for category in category_analysis:
+                if category in FLEXIBLE_CATEGORIES:
+                    recommendations.append({
+                        "category": category,
+                        "action": f"Adjust {category.lower()} based on monthly income - reduce in lean months",
+                        "potential_impact": float(category_analysis[category].monthly_savings),
+                        "difficulty": "easy",
+                        "type": "freelancer_advice"
+                    })
+                    break  # Add only one flexible category recommendation
     
     else:  # scenario_type == "increase"
         # Sort by categories where increase is most achievable
@@ -56,6 +86,8 @@ def generate_recommendations(
             if data.monthly_savings > 50:
                 if category in DISCRETIONARY_CATEGORIES:
                     action = f"You could comfortably increase {category.lower()} spending by {data.achievable_reduction_pct}%"
+                elif category in FREELANCER_CATEGORIES:
+                    action = f"Investing in {category.lower()} could improve future income - increase by {data.achievable_reduction_pct}%"
                 else:
                     action = f"Increasing {category.lower()} by {data.achievable_reduction_pct}% is feasible but monitor carefully"
                 
@@ -74,6 +106,17 @@ def generate_recommendations(
                 "potential_impact": 0,
                 "difficulty": "easy",
                 "type": "monitoring"
+            })
+        
+        # Freelancer-specific: Encourage business investment in good months
+        if income_stats:
+            avg_income = income_stats.get('mean', 0)
+            recommendations.append({
+                "category": "FREELANCER_STRATEGY",
+                "action": f"In months with above-average income (>${avg_income:.0f}), consider investing in business growth or emergency fund",
+                "potential_impact": 0,
+                "difficulty": "easy",
+                "type": "freelancer_advice"
             })
     
     return recommendations

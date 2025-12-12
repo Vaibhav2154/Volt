@@ -145,12 +145,18 @@ def simulate_spending_scenario(
     
     actual_change_pct = (total_achievable_change / baseline_total * 100) if baseline_total > 0 else 0
     
-    # Generate recommendations
+    # Get income stats for freelancer-aware recommendations
+    income_stats = None
+    if hasattr(model, 'monthly_patterns') and model.monthly_patterns:
+        income_stats = model.monthly_patterns.get('income_stats')
+    
+    # Generate recommendations (now income-aware for freelancers)
     recommendations = generate_recommendations(
         category_breakdown, 
         model.impulse_score, 
         scenario_type,
-        target_categories
+        target_categories,
+        income_stats
     )
     
     # Determine feasibility
