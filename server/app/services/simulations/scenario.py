@@ -12,7 +12,7 @@ from app.models.transactions import Transaction
 from app.models.behaviour import BehaviourModel
 from app.utils.constants import DISCRETIONARY_CATEGORIES, ESSENTIAL_CATEGORIES
 from app.schemas.simulation_schemas import SimulationResponse, CategoryAnalysis
-from app.services.simulation_helpers import generate_recommendations
+from .helpers import generate_recommendations
 
 
 def simulate_spending_scenario(

@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 from app.models.transactions import Transaction
 from app.models.behaviour import BehaviourModel
 from app.schemas.simulation_schemas import ScenarioComparisonResponse, ScenarioSummary
-from app.services.simulation_scenario import simulate_spending_scenario
-from app.services.simulation_helpers import (
+from .scenario import simulate_spending_scenario
+from .helpers import (
     generate_reduction_scenarios,
     generate_increase_scenarios,
     calculate_difficulty_score,
