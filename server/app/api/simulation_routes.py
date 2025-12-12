@@ -278,7 +278,6 @@ async def simulate_spending(
 @router.post(
     "/users/{user_id}/simulate/enhanced",
     response_model=ScenarioInsight,
-    response_model=ScenarioInsight,
     summary="Simulate spending with enhanced insights",
     description="Run simulation with frontend-ready insights including quick wins, warnings, and timelines"
 )
