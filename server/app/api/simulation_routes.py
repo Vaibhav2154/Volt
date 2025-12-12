@@ -42,7 +42,6 @@ async def get_behavior_model(
     db: Session = Depends(get_db)
 ):
     """Get the behavior model for a specific user"""
-    # Verify the user can only access their own behavior model
     if user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
