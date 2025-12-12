@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str
     access_token_expire_minutes: int
+    gemini_api_key: str
     
     # Redis configuration
     redis_host: str = "redis"
