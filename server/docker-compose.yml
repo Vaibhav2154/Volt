@@ -1,0 +1,98 @@
+services:
+  # Redis for job queue
+  redis:
+    image: redis:7-alpine
+    container_name: kronyx-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kronyx-network
+
+  # FastAPI application
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kronyx-api
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=${APP_NAME}
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+    volumes:
+      - .:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - kronyx-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Email Poller Service
+  email_poller:
+    build:
+      context: .
+      dockerfile: Dockerfile.poller
+    container_name: kronyx-email-poller
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      - APP_NAME=${APP_NAME}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - REDIS_QUEUE_NAME=${REDIS_QUEUE_NAME}
+      - IMAP_POLL_INTERVAL=${IMAP_POLL_INTERVAL:-300}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - kronyx-network
+    restart: unless-stopped
+
+  # Transaction Worker Service
+  transaction_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: kronyx-transaction-worker
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - REDIS_QUEUE_NAME=${REDIS_QUEUE_NAME}
+      - DEFAULT_USER_ID=${DEFAULT_USER_ID:-1}
+    volumes:
+      - .:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+    networks:
+      - kronyx-network
+    restart: unless-stopped
+
+networks:
+  kronyx-network:
+    driver: bridge
+
+volumes:
+  redis_data:
