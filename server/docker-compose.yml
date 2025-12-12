@@ -33,6 +33,7 @@ services:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_DB=${REDIS_DB}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
       - .:/app
     depends_on:
@@ -59,6 +60,7 @@ services:
       - REDIS_DB=${REDIS_DB}
       - REDIS_QUEUE_NAME=${REDIS_QUEUE_NAME}
       - IMAP_POLL_INTERVAL=${IMAP_POLL_INTERVAL:-300}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       redis:
         condition: service_healthy
