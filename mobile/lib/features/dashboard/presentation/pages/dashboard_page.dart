@@ -8,11 +8,6 @@ import '../../../transactions/presentation/bloc/transaction_bloc.dart';
 import '../../../transactions/presentation/bloc/transaction_event.dart';
 import '../../../transactions/presentation/bloc/transaction_state.dart';
 import '../../../transactions/domain/entities/transaction.dart';
-import '../../../transactions/presentation/pages/transactions_page.dart';
-import '../../../goals/presentation/pages/goals_page.dart';
-import '../../../goals/presentation/bloc/goal_bloc.dart';
-import '../../../lean_week/presentation/pages/lean_week_page.dart';
-import '../../../lean_week/presentation/bloc/lean_week_bloc.dart';
 import '../../../simulations/presentation/pages/simulations_page.dart';
 import '../../../simulations/presentation/bloc/simulation_bloc.dart';
 import '../../../gamification/presentation/pages/gamification_page.dart';
@@ -250,9 +245,9 @@ class _DashboardPageState extends State<DashboardPage> {
                           },
                         ),
                         const SizedBox(height: 24),
-                        // Quick actions
+                        // Quick actions (only features not in bottom nav)
                         Text(
-                          'Quick Actions',
+                          'More Tools',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -260,71 +255,9 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        // First row
+                        // Single row with Simulations and Achievements
                         Row(
                           children: [
-                            Expanded(
-                              child: _buildQuickActionButton(
-                                context,
-                                theme,
-                                Icons.account_balance_wallet,
-                                'Transactions',
-                                () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => BlocProvider(
-                                        create: (_) => sl<TransactionBloc>(),
-                                        child: const TransactionsPage(),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildQuickActionButton(
-                                context,
-                                theme,
-                                Icons.flag,
-                                'Goals',
-                                () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => BlocProvider(
-                                        create: (_) => sl<GoalBloc>(),
-                                        child: const GoalsPage(),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // Second row
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildQuickActionButton(
-                                context,
-                                theme,
-                                Icons.analytics_outlined,
-                                'Lean Week',
-                                () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => BlocProvider(
-                                        create: (_) => sl<LeanWeekBloc>(),
-                                        child: const LeanWeekPage(),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
                             Expanded(
                               child: _buildQuickActionButton(
                                 context,
@@ -343,12 +276,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                 },
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // Third row - Gamification
-                        Row(
-                          children: [
+                            const SizedBox(width: 12),
                             Expanded(
                               child: _buildQuickActionButton(
                                 context,
@@ -366,10 +294,6 @@ class _DashboardPageState extends State<DashboardPage> {
                                   );
                                 },
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Container(), // Empty space for alignment
                             ),
                           ],
                         ),
