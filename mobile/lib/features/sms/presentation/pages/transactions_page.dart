@@ -289,12 +289,20 @@ class _TransactionsPageState extends State<TransactionsPage> {
             children: [
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: ColorPalette.successLight,
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        ColorPalette.success.withOpacity(0.15),
+                        ColorPalette.success.withOpacity(0.08),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: ColorPalette.success.withOpacity(0.3),
+                      width: 1.5,
                     ),
                   ),
                   child: Column(
@@ -302,29 +310,42 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     children: [
                       Row(
                         children: [
-                          Icon(
-                            Icons.arrow_downward,
-                            color: ColorPalette.success,
-                            size: 16,
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: ColorPalette.success.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.arrow_downward_rounded,
+                              color: ColorPalette.success,
+                              size: 18,
+                            ),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 8),
                           Text(
                             'Received',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 13,
                               color: ColorPalette.success,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '₹${totalCredit.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
+                      const SizedBox(height: 12),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '₹${totalCredit.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -334,12 +355,20 @@ class _TransactionsPageState extends State<TransactionsPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: ColorPalette.errorLight,
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        ColorPalette.error.withOpacity(0.15),
+                        ColorPalette.error.withOpacity(0.08),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: ColorPalette.error.withOpacity(0.3),
+                      width: 1.5,
                     ),
                   ),
                   child: Column(
@@ -347,29 +376,42 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     children: [
                       Row(
                         children: [
-                          Icon(
-                            Icons.arrow_upward,
-                            color: ColorPalette.error,
-                            size: 16,
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: ColorPalette.error.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.arrow_upward_rounded,
+                              color: ColorPalette.error,
+                              size: 18,
+                            ),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 8),
                           Text(
                             'Sent',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 13,
                               color: ColorPalette.error,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '₹${totalDebit.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
+                      const SizedBox(height: 12),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '₹${totalDebit.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],

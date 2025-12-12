@@ -152,35 +152,13 @@ class _TransactionsPageState extends State<TransactionsPage>
               }
               return _buildTransactionsList(state.transactions, theme);
             } else if (state is TransactionError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: theme.colorScheme.error,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      state.message,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: () {
-                        _transactionBloc.add(
-                              const LoadTransactionsEvent(),
-                            );
-                      },
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
+              return ErrorState(
+                message: state.message,
+                onRetry: () {
+                  _transactionBloc.add(
+                        const LoadTransactionsEvent(),
+                      );
+                },
               );
             }
 
@@ -555,7 +533,7 @@ class _TransactionsPageState extends State<TransactionsPage>
                             label: const Text('Delete'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: ColorPalette.error,
-                              foregroundColor: Colors.white,
+                              foregroundColor: theme.colorScheme.onError,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -653,6 +631,7 @@ class _TransactionsPageState extends State<TransactionsPage>
   }
 
   void _showAddTransactionDialog(BuildContext context) {
+    final theme = Theme.of(context);
     final authState = context.read<AuthBloc>().state;
     int? userId;
 
@@ -660,9 +639,13 @@ class _TransactionsPageState extends State<TransactionsPage>
       userId = authState.user.id;
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('User not authenticated'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('User not authenticated'),
+          backgroundColor: theme.colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
       return;
@@ -773,6 +756,7 @@ class _TransactionsPageState extends State<TransactionsPage>
     BuildContext context,
     TransactionEntity transaction,
   ) {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -793,8 +777,8 @@ class _TransactionsPageState extends State<TransactionsPage>
                   );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
             ),
             child: const Text('Delete'),
           ),

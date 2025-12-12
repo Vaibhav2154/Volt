@@ -116,15 +116,25 @@ class _EmailConfigPageState extends State<EmailConfigPage> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: status.emailParsingEnabled
-                          ? ColorPalette.successLight
-                          : ColorPalette.warningLight,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: status.emailParsingEnabled
+                            ? [
+                                ColorPalette.success.withOpacity(0.15),
+                                ColorPalette.success.withOpacity(0.08),
+                              ]
+                            : [
+                                ColorPalette.warning.withOpacity(0.15),
+                                ColorPalette.warning.withOpacity(0.08),
+                              ],
+                      ),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: status.emailParsingEnabled
-                            ? ColorPalette.success
-                            : ColorPalette.warning,
-                        width: 2,
+                            ? ColorPalette.success.withOpacity(0.3)
+                            : ColorPalette.warning.withOpacity(0.3),
+                        width: 1.5,
                       ),
                     ),
                     child: Column(

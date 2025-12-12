@@ -22,3 +22,4 @@ class GoalContribution extends Equatable {
 
 
 
+

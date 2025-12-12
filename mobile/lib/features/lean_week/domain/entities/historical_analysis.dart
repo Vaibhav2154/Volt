@@ -17,3 +17,4 @@ class HistoricalAnalysis extends Equatable {
 
 
 
+

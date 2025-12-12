@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/transaction.dart';
+import '../../../../core/theme/app_pallette.dart';
 import 'package:intl/intl.dart';
 
 class TransactionCard extends StatelessWidget {
@@ -14,7 +15,7 @@ class TransactionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isCredit = transaction.type == TransactionType.credit;
-    final color = isCredit ? Colors.green : Colors.red;
+    final color = isCredit ? ColorPalette.success : ColorPalette.error;
 
     return GestureDetector(
       onTap: () => _showTransactionDetails(context),

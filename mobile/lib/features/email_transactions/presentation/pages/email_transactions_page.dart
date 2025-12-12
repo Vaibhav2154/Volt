@@ -331,13 +331,25 @@ class _EmailTransactionsPageState extends State<EmailTransactionsPage> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: health.status == 'healthy'
-                    ? ColorPalette.successLight
-                    : ColorPalette.errorLight,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: health.status == 'healthy'
+                      ? [
+                          ColorPalette.success.withOpacity(0.15),
+                          ColorPalette.success.withOpacity(0.08),
+                        ]
+                      : [
+                          ColorPalette.error.withOpacity(0.15),
+                          ColorPalette.error.withOpacity(0.08),
+                        ],
+                ),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: health.status == 'healthy' ? ColorPalette.success : ColorPalette.error,
-                  width: 2,
+                  color: health.status == 'healthy'
+                      ? ColorPalette.success.withOpacity(0.3)
+                      : ColorPalette.error.withOpacity(0.3),
+                  width: 1.5,
                 ),
               ),
               child: Row(

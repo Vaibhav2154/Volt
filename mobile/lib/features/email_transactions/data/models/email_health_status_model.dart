@@ -33,3 +33,4 @@ class EmailHealthStatusModel extends EmailHealthStatus {
 
 
 
+

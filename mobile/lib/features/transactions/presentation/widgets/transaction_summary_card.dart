@@ -22,48 +22,29 @@ class TransactionSummaryCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.primary.withOpacity(0.1),
-            theme.colorScheme.primary.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.primary.withOpacity(0.2),
-          width: 1.5,
+          color: theme.colorScheme.outline.withOpacity(0.1),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         children: [
           // Transaction count
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
             child: Text(
               '$transactionCount transaction${transactionCount != 1 ? 's' : ''} in last $selectedDays days',
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.primary,
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           // Summary cards
           Row(
             children: [
@@ -90,49 +71,51 @@ class TransactionSummaryCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           // Net amount
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: (netAmount >= 0 ? ColorPalette.success : ColorPalette.error)
-                    .withOpacity(0.3),
-                width: 1.5,
+                color: theme.colorScheme.outline.withOpacity(0.1),
               ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      netAmount >= 0
-                          ? Icons.trending_up_rounded
-                          : Icons.trending_down_rounded,
-                      color: netAmount >= 0 ? ColorPalette.success : ColorPalette.error,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
                     Text(
-                      'Net Amount',
+                      'Net Flow',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
+                        fontSize: 14,
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '₹${netAmount.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: netAmount >= 0
+                            ? ColorPalette.success
+                            : ColorPalette.error,
                       ),
                     ),
                   ],
                 ),
-                Text(
-                  '₹${netAmount.abs().toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: netAmount >= 0 ? Colors.green : Colors.red,
-                  ),
+                Icon(
+                  netAmount >= 0
+                      ? Icons.trending_up
+                      : Icons.trending_down,
+                  color: netAmount >= 0
+                      ? ColorPalette.success
+                      : ColorPalette.error,
+                  size: 32,
                 ),
               ],
             ),
@@ -151,7 +134,7 @@ class TransactionSummaryCard extends StatelessWidget {
     required ThemeData theme,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -196,12 +179,18 @@ class TransactionSummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            '₹${amount.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '₹${amount.toStringAsFixed(2)}',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -209,4 +198,5 @@ class TransactionSummaryCard extends StatelessWidget {
     );
   }
 }
+
 

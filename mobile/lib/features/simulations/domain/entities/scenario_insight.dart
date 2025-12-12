@@ -102,3 +102,4 @@ class ScenarioInsight extends Equatable {
 
 
 
+

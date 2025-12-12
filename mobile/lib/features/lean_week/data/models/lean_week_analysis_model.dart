@@ -48,3 +48,4 @@ class LeanWeekAnalysisModel extends LeanWeekAnalysis {
 
 
 
+
