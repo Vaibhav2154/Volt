@@ -166,10 +166,10 @@ async def get_dashboard_insights(
     if quick_wins:
         top_win = quick_wins[0]
         recommended_actions.append(
-            f"Start with {top_win['category']}: {top_win['action']} to save ${top_win['monthly_savings']:.0f}/month"
+            f"Start with {top_win.category}: {top_win.action} to save ${top_win.monthly_savings:.0f}/month"
         )
     
-    if any(w['severity'] == 'high' for w in risk_warnings):
+    if any(w.severity == 'high' for w in risk_warnings):
         recommended_actions.append("Review high-priority warnings before making changes")
     
     if model.transaction_count < 50:
@@ -178,19 +178,12 @@ async def get_dashboard_insights(
     if not recommended_actions:
         recommended_actions.append("Explore scenario comparisons to find savings opportunities")
     
-    # Prepare response with income analysis if available
-    response = {
-        'behavior_summary': behavior_summary,
-        'quick_wins': quick_wins,
-        'risk_warnings': risk_warnings,
-        'recommended_actions': recommended_actions
-    }
-    
-    # Add income context to response if available
-    if income_stats:
-        response['income_analysis'] = _build_income_analysis(income_stats)
-    
-    return response
+    return DashboardInsightResponse(
+        behavior_summary=behavior_summary,
+        quick_wins=quick_wins,
+        risk_warnings=risk_warnings,
+        recommended_actions=recommended_actions
+    )
 
 
 @router.get(
@@ -209,7 +202,8 @@ async def get_behavior_summary(
     model = get_user_behavior_model(db, user_id)
     income_stats = get_income_stats(db, user_id)
     
-    return insight_formatter.format_behavior_summary(model, income_stats)
+    behavior_summary = insight_formatter.format_behavior_summary(model, income_stats)
+    return BehaviorSummaryResponse(behavior_summary=behavior_summary)
 
 
 
@@ -283,6 +277,7 @@ async def simulate_spending(
 
 @router.post(
     "/users/{user_id}/simulate/enhanced",
+    response_model=ScenarioInsight,
     response_model=ScenarioInsight,
     summary="Simulate spending with enhanced insights",
     description="Run simulation with frontend-ready insights including quick wins, warnings, and timelines"
@@ -470,152 +465,4 @@ async def compare_scenarios_enhanced(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Scenario comparison failed: {str(e)}"
-        )
-
-
-
-@router.post(
-    "/users/{user_id}/simulate/reallocate",
-    response_model=ReallocationResponse,
-    summary="Simulate budget reallocation",
-    description="Move money between spending categories while maintaining the same total budget"
-)
-async def simulate_reallocation(
-    user_id: int,
-    request: ReallocationRequest,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Session = Depends(get_db)
-):
-    """
-    Simulate budget reallocation between categories.
-    
-    Example: Move $500 from DINING to SAVINGS and $200 from ENTERTAINMENT to HEALTHCARE.
-    
-    Rules:
-    - Total changes must sum to zero (balanced budget)
-    - Provides feasibility analysis for each reallocation
-    - Warns about difficult or unrealistic changes
-    - Recommends adjustments for better success
-    """
-    verify_user_access(user_id, current_user)
-    
-    try:
-        result = simulation_service.simulate_reallocation(
-            db=db,
-            user_id=user_id,
-            reallocations=request.reallocations,
-            time_period_days=request.time_period_days
-        )
-        return result
-        
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Reallocation simulation failed: {str(e)}"
-        )
-
-
-@router.post(
-    "/users/{user_id}/simulate/project",
-    response_model=ProjectionResponse,
-    summary="Project future spending",
-    description="Forecast spending over multiple months with optional behavioral changes"
-)
-async def project_future_spending(
-    user_id: int,
-    request: ProjectionRequest,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Session = Depends(get_db)
-):
-    """
-    Project future spending over 1-24 months.
-    
-    Features:
-    - Month-by-month spending projections
-    - Apply behavioral changes (e.g., "reduce DINING by 15%")
-    - Cumulative impact tracking
-    - Confidence levels (decreases over time)
-    - Visual data for trend charts
-    
-    Perfect for:
-    - "What if I maintain this reduction for 6 months?"
-    - "How much will I save this year if I cut dining by 20%?"
-    - Long-term financial planning
-    """
-    verify_user_access(user_id, current_user)
-    
-    try:
-        result = simulation_service.project_future_spending(
-            db=db,
-            user_id=user_id,
-            projection_months=request.projection_months,
-            time_period_days=request.time_period_days,
-            behavioral_changes=request.behavioral_changes,
-            scenario_id=request.scenario_id
-        )
-        return result
-        
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Projection failed: {str(e)}"
-        )
-
-
-@router.post(
-    "/transactions/{transaction_id}/recategorize",
-    response_model=TransactionResponse,
-    summary="Recategorize a transaction",
-    description="Force recategorization of a transaction using LLM"
-)
-async def recategorize_transaction(
-    transaction_id: int,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Session = Depends(get_db)
-):
-    """Force recategorization of a specific transaction"""
-    tx = db.query(Transaction).filter(
-        Transaction.id == transaction_id,
-        Transaction.user_id == current_user.id
-    ).first()
-    
-    if not tx:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Transaction {transaction_id} not found"
-        )
-    
-    try:
-        # Force LLM categorization
-        result = await categorization_service.categorize_with_llm(
-            tx.merchant or "",
-            float(tx.amount),
-            tx.rawMessage or "",
-            tx.type
-        )
-        
-        tx.category = result.category
-        db.commit()
-        db.refresh(tx)
-        
-        # Update behavior model
-        await behavior_engine.update_model(db, tx.user_id, tx)
-        
-        return tx
-        
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Recategorization failed: {str(e)}"
         )
