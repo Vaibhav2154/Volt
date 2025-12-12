@@ -114,6 +114,7 @@ class _EmailTransactionsPageState extends State<EmailTransactionsPage> {
         ),
         floatingActionButton: _selectedTab == 0 && _token != null
             ? FloatingActionButton.extended(
+                heroTag: 'email_transactions_fab',
                 onPressed: () => _showManualEmailDialog(context),
                 icon: const Icon(Icons.email),
                 label: const Text('Process Email'),

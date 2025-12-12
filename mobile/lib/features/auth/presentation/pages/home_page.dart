@@ -16,6 +16,8 @@ import '../../../goals/presentation/bloc/goal_bloc.dart';
 import '../../../goals/presentation/pages/goals_page.dart';
 import '../../../simulations/presentation/bloc/simulation_bloc.dart';
 import '../../../simulations/presentation/pages/simulations_page.dart';
+import '../../../gamification/presentation/bloc/gamification_bloc.dart';
+import '../../../gamification/presentation/pages/gamification_page.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -392,6 +394,40 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       icon: const Icon(Icons.calculate),
                       label: const Text(
                         'What-If Simulations',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Gamification button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider(
+                              create: (_) => sl<GamificationBloc>(),
+                              child: const GamificationPage(),
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ColorPalette.green400,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      icon: const Icon(Icons.emoji_events),
+                      label: const Text(
+                        'Achievements',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

@@ -75,6 +75,12 @@ import 'features/simulations/domain/usecases/simulate_reallocation_usecase.dart'
 import 'features/simulations/domain/usecases/simulate_spending_enhanced_usecase.dart';
 import 'features/simulations/domain/usecases/simulate_spending_usecase.dart';
 import 'features/simulations/presentation/bloc/simulation_bloc.dart';
+import 'features/gamification/data/datasources/gamification_remote_data_source.dart';
+import 'features/gamification/data/repositories/gamification_repository_impl.dart';
+import 'features/gamification/domain/repositories/gamification_repository.dart';
+import 'features/gamification/domain/usecases/get_gamification_feed_usecase.dart';
+import 'features/gamification/domain/usecases/get_gamification_profile_usecase.dart';
+import 'features/gamification/presentation/bloc/gamification_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -139,6 +145,9 @@ Future<void> initDependencies() async {
 
   // Simulations feature
   _initSimulations();
+
+  // Gamification feature
+  _initGamification();
 }
 
 void _initAuth() {
@@ -418,6 +427,34 @@ void _initSimulations() {
       compareScenariosUseCase: sl(),
       simulateReallocationUseCase: sl(),
       projectFutureSpendingUseCase: sl(),
+    ),
+  );
+}
+
+void _initGamification() {
+  // Data sources
+  sl.registerLazySingleton<GamificationRemoteDataSource>(
+    () => GamificationRemoteDataSourceImpl(sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<GamificationRepository>(
+    () => GamificationRepositoryImpl(
+      remoteDataSource: sl(),
+      networkInfo: sl(),
+      authLocalDataSource: sl(),
+    ),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetGamificationProfileUseCase(sl()));
+  sl.registerLazySingleton(() => GetGamificationFeedUseCase(sl()));
+
+  // BLoC
+  sl.registerFactory(
+    () => GamificationBloc(
+      getProfileUseCase: sl(),
+      getFeedUseCase: sl(),
     ),
   );
 }

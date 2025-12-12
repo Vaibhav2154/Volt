@@ -169,6 +169,7 @@ class _TransactionsPageState extends State<TransactionsPage>
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'transactions_fab',
         onPressed: () => _showAddTransactionDialog(context),
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,

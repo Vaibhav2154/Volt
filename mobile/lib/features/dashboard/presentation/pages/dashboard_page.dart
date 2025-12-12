@@ -15,6 +15,8 @@ import '../../../lean_week/presentation/pages/lean_week_page.dart';
 import '../../../lean_week/presentation/bloc/lean_week_bloc.dart';
 import '../../../simulations/presentation/pages/simulations_page.dart';
 import '../../../simulations/presentation/bloc/simulation_bloc.dart';
+import '../../../gamification/presentation/pages/gamification_page.dart';
+import '../../../gamification/presentation/bloc/gamification_bloc.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../../init_dependencies.dart';
@@ -22,7 +24,7 @@ import '../../../sms/presentation/bloc/sms_bloc.dart';
 import '../../../sms/presentation/pages/transactions_page.dart' as sms_transactions;
 import '../../../email_config/presentation/bloc/email_config_bloc.dart';
 import '../../../email_config/presentation/pages/email_config_page.dart';
-import '../../../auth/presentation/pages/settings_page.dart';
+import '../../../auth/presentation/pages/profile_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -83,13 +85,16 @@ class _DashboardPageState extends State<DashboardPage> {
                   actions: [
                     IconButton(
                       icon: Icon(
-                        Icons.settings_outlined,
+                        Icons.person_outline,
                         color: theme.colorScheme.onSurface,
                       ),
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => const SettingsPage(),
+                            builder: (_) => BlocProvider(
+                              create: (_) => sl<GamificationBloc>(),
+                              child: const ProfilePage(),
+                            ),
                           ),
                         );
                       },
@@ -337,6 +342,34 @@ class _DashboardPageState extends State<DashboardPage> {
                                   );
                                 },
                               ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        // Third row - Gamification
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildQuickActionButton(
+                                context,
+                                theme,
+                                Icons.emoji_events,
+                                'Achievements',
+                                () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => BlocProvider(
+                                        create: (_) => sl<GamificationBloc>(),
+                                        child: const GamificationPage(),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Container(), // Empty space for alignment
                             ),
                           ],
                         ),

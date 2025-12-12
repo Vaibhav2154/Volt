@@ -211,6 +211,7 @@ class _GoalsPageState extends State<GoalsPage> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'goals_fab',
         onPressed: () => _navigateToCreateGoal(context),
         icon: const Icon(Icons.add),
         label: const Text('New Goal'),

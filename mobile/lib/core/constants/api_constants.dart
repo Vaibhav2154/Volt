@@ -53,6 +53,10 @@ class ApiConstants {
   static String simulationProjectEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate/project';
   static String simulationBehaviorSummaryEndpoint(int userId) => '$simulationBaseEndpoint/$userId/behavior/summary';
   
+  // Gamification endpoints
+  static const String gamificationProfileEndpoint = '/gamification/profile';
+  static const String gamificationFeedEndpoint = '/gamification/feed';
+  
   // Headers
   static const String contentType = 'application/json';
   static const String accept = 'application/json';
