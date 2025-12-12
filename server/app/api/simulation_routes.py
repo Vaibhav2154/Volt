@@ -13,7 +13,7 @@ from app.schemas.simulation_schemas import (
     ProjectionRequest, ProjectionResponse
 )
 from app.schemas.insights import (
-    DashboardInsightResponse, ScenarioSummary,
+    DashboardInsightResponse, ScenarioSummary, ScenarioInsight,
     ComparisonInsightResponse, BehaviorSummaryResponse
 )
 from app.schemas.transaction_schemas import (
@@ -283,7 +283,7 @@ async def simulate_spending(
 
 @router.post(
     "/users/{user_id}/simulate/enhanced",
-    response_model=ScenarioSummary,
+    response_model=ScenarioInsight,
     summary="Simulate spending with enhanced insights",
     description="Run simulation with frontend-ready insights including quick wins, warnings, and timelines"
 )
@@ -324,8 +324,28 @@ async def simulate_spending_enhanced(
         income_stats = get_income_stats(db, user_id)
         
         # Format for frontend
+        # Convert Pydantic model to dict recursively (handles nested models)
+        # Use model_dump() for Pydantic v2 which recursively converts nested models
+        if hasattr(simulation_result, 'model_dump'):
+            simulation_dict = simulation_result.model_dump(mode='python')
+        elif hasattr(simulation_result, 'dict'):
+            # Pydantic v1 - dict() also recursively converts nested models
+            simulation_dict = simulation_result.dict()
+        else:
+            # Fallback - manually convert
+            simulation_dict = dict(simulation_result)
+            # Convert nested CategoryAnalysis models to dicts
+            if 'category_breakdown' in simulation_dict:
+                category_breakdown = simulation_dict['category_breakdown']
+                if isinstance(category_breakdown, dict):
+                    simulation_dict['category_breakdown'] = {
+                        k: v.model_dump(mode='python') if hasattr(v, 'model_dump') 
+                        else (v.dict() if hasattr(v, 'dict') else v)
+                        for k, v in category_breakdown.items()
+                    }
+        
         enhanced_result = insight_formatter.format_scenario_summary(
-            dict(simulation_result),
+            simulation_dict,
             model,
             income_stats
         )
@@ -427,8 +447,16 @@ async def compare_scenarios_enhanced(
         )
         
         # Format for frontend
+        # Convert Pydantic model to dict recursively
+        if hasattr(comparison_result, 'model_dump'):
+            comparison_dict = comparison_result.model_dump(mode='python')
+        elif hasattr(comparison_result, 'dict'):
+            comparison_dict = comparison_result.dict()
+        else:
+            comparison_dict = dict(comparison_result)
+        
         enhanced_insights = insight_formatter.format_comparison_insights(
-            dict(comparison_result)
+            comparison_dict
         )
         
         return {'insights': enhanced_insights}

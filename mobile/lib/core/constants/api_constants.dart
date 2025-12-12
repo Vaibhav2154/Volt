@@ -42,6 +42,17 @@ class ApiConstants {
   static const String goalsEndpoint = '/goals';
   static const String goalsProgressEndpoint = '/goals/progress';
   
+  // Simulation endpoints
+  static const String simulationBaseEndpoint = '/api/users';
+  static String simulationBehaviorEndpoint(int userId) => '$simulationBaseEndpoint/$userId/behavior';
+  static String simulationEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate';
+  static String simulationEnhancedEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate/enhanced';
+  static String simulationCompareEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate/compare';
+  static String simulationCompareEnhancedEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate/compare/enhanced';
+  static String simulationReallocateEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate/reallocate';
+  static String simulationProjectEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate/project';
+  static String simulationBehaviorSummaryEndpoint(int userId) => '$simulationBaseEndpoint/$userId/behavior/summary';
+  
   // Headers
   static const String contentType = 'application/json';
   static const String accept = 'application/json';

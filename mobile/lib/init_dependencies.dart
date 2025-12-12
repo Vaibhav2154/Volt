@@ -66,6 +66,15 @@ import 'features/goals/data/repositories/goal_repository_impl.dart';
 import 'features/goals/domain/repositories/goal_repository.dart';
 import 'features/goals/domain/usecases/goal_usecases.dart';
 import 'features/goals/presentation/bloc/goal_bloc.dart';
+import 'features/simulations/data/datasources/simulation_remote_data_source.dart';
+import 'features/simulations/data/repositories/simulation_repository_impl.dart';
+import 'features/simulations/domain/repositories/simulation_repository.dart';
+import 'features/simulations/domain/usecases/compare_scenarios_usecase.dart';
+import 'features/simulations/domain/usecases/project_future_spending_usecase.dart';
+import 'features/simulations/domain/usecases/simulate_reallocation_usecase.dart';
+import 'features/simulations/domain/usecases/simulate_spending_enhanced_usecase.dart';
+import 'features/simulations/domain/usecases/simulate_spending_usecase.dart';
+import 'features/simulations/presentation/bloc/simulation_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -127,6 +136,9 @@ Future<void> initDependencies() async {
 
   // Goals feature
   _initGoals();
+
+  // Simulations feature
+  _initSimulations();
 }
 
 void _initAuth() {
@@ -373,6 +385,39 @@ void _initGoals() {
       activateGoalUseCase: sl(),
       deactivateGoalUseCase: sl(),
       getGoalContributionsUseCase: sl(),
+    ),
+  );
+}
+
+void _initSimulations() {
+  // Data sources
+  sl.registerLazySingleton<SimulationRemoteDataSource>(
+    () => SimulationRemoteDataSourceImpl(sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<SimulationRepository>(
+    () => SimulationRepositoryImpl(
+      remoteDataSource: sl(),
+      networkInfo: sl(),
+    ),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => SimulateSpendingUseCase(sl()));
+  sl.registerLazySingleton(() => SimulateSpendingEnhancedUseCase(sl()));
+  sl.registerLazySingleton(() => CompareScenariosUseCase(sl()));
+  sl.registerLazySingleton(() => SimulateReallocationUseCase(sl()));
+  sl.registerLazySingleton(() => ProjectFutureSpendingUseCase(sl()));
+
+  // BLoC
+  sl.registerFactory(
+    () => SimulationBloc(
+      simulateSpendingUseCase: sl(),
+      simulateSpendingEnhancedUseCase: sl(),
+      compareScenariosUseCase: sl(),
+      simulateReallocationUseCase: sl(),
+      projectFutureSpendingUseCase: sl(),
     ),
   );
 }
