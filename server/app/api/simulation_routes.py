@@ -29,57 +29,6 @@ behavior_engine = BehaviorEngine(categorization_service)
 simulation_service = SimulationService()
 
 
-@router.post(
-    "/transactions",
-    response_model=TransactionResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Create a new transaction with AI categorization",
-    description="Creates a transaction and automatically categorizes it using hybrid rule-based + LLM approach"
-)
-async def create_transaction(
-    transaction_data: TransactionCreate,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Session = Depends(get_db)
-):
-    """
-    Create a new transaction with automatic categorization and behavior model update.
-    
-    - **user_id**: ID of the user making the transaction
-    - **amount**: Transaction amount (positive decimal)
-    - **merchant**: Merchant/vendor name
-    - **type**: Either "debit" or "credit"
-    - **timestamp**: When the transaction occurred
-    """
-    # Verify the transaction belongs to the current user
-    if transaction_data.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to create transaction for another user"
-        )
-    
-    try:
-        # Create transaction
-        tx = Transaction(**transaction_data.model_dump())
-        db.add(tx)
-        db.flush()  # Get tx.id without committing yet
-        
-        # Update behavior model (includes hybrid categorization)
-        # This will update tx.category and the behavior model
-        await behavior_engine.update_model(db, tx.user_id, tx)
-        
-        # Commit everything together: transaction + category + behavior model
-        db.commit()
-        db.refresh(tx)
-        
-        return tx
-        
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create transaction: {str(e)}"
-        )
-
 
 @router.get(
     "/users/{user_id}/behavior",
