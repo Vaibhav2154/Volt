@@ -6,6 +6,8 @@ from app.services.behavior_engine import BehaviorEngine
 from app.services.simulation import SimulationService
 from app.services.categorization import CategorizationService
 from app.services.insight_formatter_v2 import InsightFormatter
+from app.services.simulations.refinement import RefinementService
+from app.services.simulations.refinement import RefinementService
 from app.schemas.simulation_schemas import (
     BehaviourModelResponse, SimulationRequest, SimulationResponse,
     ScenarioComparisonRequest, ScenarioComparisonResponse,
@@ -35,6 +37,8 @@ categorization_service = CategorizationService(
 behavior_engine = BehaviorEngine(categorization_service)
 simulation_service = SimulationService()
 insight_formatter = InsightFormatter()
+refinement_service = RefinementService()
+refinement_service = RefinementService()
 
 
 # Helper functions
@@ -276,6 +280,110 @@ async def simulate_spending(
 
 
 @router.post(
+    "/users/{user_id}/simulate/refined",
+    summary="Simulate spending with AI-refined markdown insight",
+    description="Get simulation results with a concise 2-4 sentence AI-generated markdown insight"
+)
+async def simulate_spending_refined(
+    user_id: int,
+    request: SimulationRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    """
+    Run spending simulation and get AI-refined markdown insight.
+    
+    Returns:
+    - Complete simulation results
+    - AI-generated 2-4 sentence insight in markdown format
+    - Concise, actionable summary perfect for mobile display
+    """
+    verify_user_access(user_id, current_user)
+    
+    try:
+        # Run simulation
+        simulation_result = simulation_service.simulate_spending_scenario(
+            db=db,
+            user_id=user_id,
+            scenario_type=request.scenario_type,
+            target_percent=request.target_percent,
+            time_period_days=request.time_period_days,
+            target_categories=request.target_categories
+        )
+        
+        # Generate refined insight using Gemini
+        refined_insight = await refinement_service.refine_insight(simulation_result)
+        
+        return {
+            "simulation": simulation_result,
+            "refined_insight": refined_insight
+        }
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Simulation failed: {str(e)}"
+        )
+
+
+@router.post(
+    "/users/{user_id}/simulate/refined",
+    summary="Simulate spending with AI-refined markdown insight",
+    description="Get simulation results with a concise 2-4 sentence AI-generated markdown insight"
+)
+async def simulate_spending_refined(
+    user_id: int,
+    request: SimulationRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    """
+    Run spending simulation and get AI-refined markdown insight.
+    
+    Returns:
+    - Complete simulation results
+    - AI-generated 2-4 sentence insight in markdown format
+    - Concise, actionable summary perfect for mobile display
+    """
+    verify_user_access(user_id, current_user)
+    
+    try:
+        # Run simulation
+        simulation_result = simulation_service.simulate_spending_scenario(
+            db=db,
+            user_id=user_id,
+            scenario_type=request.scenario_type,
+            target_percent=request.target_percent,
+            time_period_days=request.time_period_days,
+            target_categories=request.target_categories
+        )
+        
+        # Generate refined insight using Gemini
+        refined_insight = await refinement_service.refine_insight(simulation_result)
+        
+        return {
+            "simulation": simulation_result,
+            "refined_insight": refined_insight
+        }
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Simulation failed: {str(e)}"
+        )
+
+
+@router.post(
     "/users/{user_id}/simulate/enhanced",
     response_model=ScenarioInsight,
     summary="Simulate spending with enhanced insights",
@@ -392,6 +500,57 @@ async def compare_scenarios(
             num_scenarios=request.num_scenarios
         )
         return result
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Scenario comparison failed: {str(e)}"
+        )
+
+
+@router.post(
+    "/users/{user_id}/simulate/compare/refined",
+    summary="Compare scenarios with AI-refined markdown insight",
+    description="Get scenario comparison with a concise 2-4 sentence AI-generated markdown insight"
+)
+async def compare_scenarios_refined(
+    user_id: int,
+    request: ScenarioComparisonRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    """
+    Compare multiple scenarios and get AI-refined markdown insight.
+    
+    Returns:
+    - Complete scenario comparison results
+    - AI-generated 2-4 sentence insight in markdown format
+    - Concise summary comparing scenarios and highlighting recommendations
+    """
+    verify_user_access(user_id, current_user)
+    
+    try:
+        # Run comparison
+        comparison_result = simulation_service.compare_scenarios(
+            db=db,
+            user_id=user_id,
+            scenario_type=request.scenario_type,
+            time_period_days=request.time_period_days,
+            num_scenarios=request.num_scenarios
+        )
+        
+        # Generate refined insight using Gemini
+        refined_insight = await refinement_service.refine_insight(comparison_result)
+        
+        return {
+            "comparison": comparison_result,
+            "refined_insight": refined_insight
+        }
         
     except ValueError as e:
         raise HTTPException(
