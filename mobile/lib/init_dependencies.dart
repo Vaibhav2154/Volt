@@ -36,6 +36,24 @@ import 'features/transactions/domain/usecases/get_transactions_by_date_range_use
 import 'features/transactions/domain/usecases/get_transactions_usecase.dart';
 import 'features/transactions/domain/usecases/update_transaction_usecase.dart';
 import 'features/transactions/presentation/bloc/transaction_bloc.dart';
+import 'features/email_config/data/datasources/email_config_remote_data_source.dart';
+import 'features/email_config/data/repositories/email_config_repository_impl.dart';
+import 'features/email_config/domain/repositories/email_config_repository.dart';
+import 'features/email_config/domain/usecases/disable_email_parsing_usecase.dart';
+import 'features/email_config/domain/usecases/get_email_parsing_status_usecase.dart';
+import 'features/email_config/domain/usecases/setup_app_password_usecase.dart';
+import 'features/email_config/domain/usecases/update_app_password_usecase.dart';
+import 'features/email_config/presentation/bloc/email_config_bloc.dart';
+import 'features/email_transactions/data/datasources/email_transactions_remote_data_source.dart';
+import 'features/email_transactions/data/repositories/email_transactions_repository_impl.dart';
+import 'features/email_transactions/domain/repositories/email_transactions_repository.dart';
+import 'features/email_transactions/domain/usecases/enqueue_manual_email_usecase.dart';
+import 'features/email_transactions/domain/usecases/get_health_status_usecase.dart';
+import 'features/email_transactions/domain/usecases/get_job_status_usecase.dart';
+import 'features/email_transactions/domain/usecases/get_queue_stats_usecase.dart';
+import 'features/email_transactions/domain/usecases/get_recent_transactions_usecase.dart';
+import 'features/email_transactions/domain/usecases/get_transactions_by_bank_usecase.dart';
+import 'features/email_transactions/presentation/bloc/email_transactions_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -85,6 +103,12 @@ Future<void> initDependencies() async {
 
   // Transactions feature
   _initTransactions();
+
+  // Email Config feature
+  _initEmailConfig();
+
+  // Email Transactions feature
+  _initEmailTransactions();
 }
 
 void _initAuth() {
@@ -195,6 +219,72 @@ void _initTransactions() {
       updateTransactionUseCase: sl(),
       deleteTransactionUseCase: sl(),
       extractTransactionFromImageUseCase: sl(),
+    ),
+  );
+}
+
+void _initEmailConfig() {
+  // Data sources
+  sl.registerLazySingleton<EmailConfigRemoteDataSource>(
+    () => EmailConfigRemoteDataSourceImpl(sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<EmailConfigRepository>(
+    () => EmailConfigRepositoryImpl(
+      remoteDataSource: sl(),
+      networkInfo: sl(),
+    ),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => SetupAppPasswordUseCase(sl()));
+  sl.registerLazySingleton(() => GetEmailParsingStatusUseCase(sl()));
+  sl.registerLazySingleton(() => DisableEmailParsingUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateAppPasswordUseCase(sl()));
+
+  // BLoC
+  sl.registerFactory(
+    () => EmailConfigBloc(
+      setupAppPasswordUseCase: sl(),
+      getEmailParsingStatusUseCase: sl(),
+      disableEmailParsingUseCase: sl(),
+      updateAppPasswordUseCase: sl(),
+    ),
+  );
+}
+
+void _initEmailTransactions() {
+  // Data sources
+  sl.registerLazySingleton<EmailTransactionsRemoteDataSource>(
+    () => EmailTransactionsRemoteDataSourceImpl(sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<EmailTransactionsRepository>(
+    () => EmailTransactionsRepositoryImpl(
+      remoteDataSource: sl(),
+      networkInfo: sl(),
+    ),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetQueueStatsUseCase(sl()));
+  sl.registerLazySingleton(() => GetJobStatusUseCase(sl()));
+  sl.registerLazySingleton(() => EnqueueManualEmailUseCase(sl()));
+  sl.registerLazySingleton(() => GetRecentTransactionsUseCase(sl()));
+  sl.registerLazySingleton(() => GetTransactionsByBankUseCase(sl()));
+  sl.registerLazySingleton(() => GetHealthStatusUseCase(sl()));
+
+  // BLoC
+  sl.registerFactory(
+    () => EmailTransactionsBloc(
+      getQueueStatsUseCase: sl(),
+      getJobStatusUseCase: sl(),
+      enqueueManualEmailUseCase: sl(),
+      getRecentTransactionsUseCase: sl(),
+      getTransactionsByBankUseCase: sl(),
+      getHealthStatusUseCase: sl(),
     ),
   );
 }

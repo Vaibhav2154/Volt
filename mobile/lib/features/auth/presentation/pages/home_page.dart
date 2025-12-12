@@ -5,6 +5,10 @@ import '../../../sms/presentation/bloc/sms_bloc.dart';
 import '../../../sms/presentation/pages/transactions_page.dart';
 import '../../../transactions/presentation/bloc/transaction_bloc.dart';
 import '../../../transactions/presentation/pages/transactions_page.dart' as server_transactions;
+import '../../../email_config/presentation/bloc/email_config_bloc.dart';
+import '../../../email_config/presentation/pages/email_config_page.dart';
+import '../../../email_transactions/presentation/bloc/email_transactions_bloc.dart';
+import '../../../email_transactions/presentation/pages/email_transactions_page.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -182,6 +186,79 @@ class HomePage extends StatelessWidget {
                             icon: const Icon(Icons.account_balance_wallet),
                             label: const Text(
                               'All Transactions',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Email features buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 56,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => BlocProvider(
+                                    create: (_) => sl<EmailConfigBloc>(),
+                                    child: const EmailConfigPage(),
+                                  ),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.purple,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            icon: const Icon(Icons.email_outlined),
+                            label: const Text(
+                              'Email Config',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 56,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => BlocProvider(
+                                    create: (_) => sl<EmailTransactionsBloc>(),
+                                    child: const EmailTransactionsPage(),
+                                  ),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.teal,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            icon: const Icon(Icons.mark_email_read),
+                            label: const Text(
+                              'Email Transactions',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
