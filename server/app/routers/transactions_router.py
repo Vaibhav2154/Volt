@@ -40,6 +40,13 @@ async def create_transaction(
     # Create transaction
     new_transaction = Transaction(**transaction.model_dump())
     db.add(new_transaction)
+    
+    # Update user savings based on transaction type
+    if transaction.type == "credit":
+        current_user.savings += transaction.amount
+    elif transaction.type == "debit":
+        current_user.savings -= transaction.amount
+    
     db.commit()
     db.refresh(new_transaction)
     
@@ -67,6 +74,14 @@ async def create_multiple_transactions(
     # Create all transactions
     new_transactions = [Transaction(**t.model_dump()) for t in transactions]
     db.add_all(new_transactions)
+    
+    # Update user savings for each transaction
+    for transaction in transactions:
+        if transaction.type == "credit":
+            current_user.savings += transaction.amount
+        elif transaction.type == "debit":
+            current_user.savings -= transaction.amount
+    
     db.commit()
     
     # Refresh all to get IDs and created_at
@@ -166,9 +181,21 @@ async def update_transaction(
             detail="Transaction not found"
         )
     
+    # Reverse the old transaction's effect on savings
+    if transaction.type == "credit":
+        current_user.savings -= transaction.amount
+    elif transaction.type == "debit":
+        current_user.savings += transaction.amount
+    
     # Update transaction fields
     for key, value in transaction_update.model_dump().items():
         setattr(transaction, key, value)
+    
+    # Apply the new transaction's effect on savings
+    if transaction_update.type == "credit":
+        current_user.savings += transaction_update.amount
+    elif transaction_update.type == "debit":
+        current_user.savings -= transaction_update.amount
     
     db.commit()
     db.refresh(transaction)

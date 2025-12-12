@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
+from decimal import Decimal
 
 
 class UserBase(BaseModel):
@@ -13,6 +14,7 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     id: int
+    savings: Decimal = Field(default=0)
     
     class Config:
         from_attributes = True
