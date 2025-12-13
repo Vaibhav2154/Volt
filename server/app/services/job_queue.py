@@ -27,7 +27,8 @@ class JobQueue:
         # Configure SSL for Heroku Redis (uses self-signed certificates)
         import ssl
         ssl_params = {}
-        if redis_url.startswith('rediss://'):  # SSL Redis connection
+        # Heroku Redis uses SSL even with redis:// URL (port 23580+ indicates SSL)
+        if 'amazonaws.com' in redis_url or redis_url.startswith('rediss://'):
             ssl_params = {
                 'ssl_cert_reqs': ssl.CERT_NONE,  # Don't verify SSL certificates (Heroku uses self-signed)
                 'ssl_check_hostname': False
