@@ -1,4 +1,4 @@
 web: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 worker: python -m app.services.transaction_worker
-poller: python -m app.services.email_poller
+poller: python -m app.services.multi_user_email_poller
 release: alembic upgrade head
