@@ -1,8 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../domain/usecases/compare_scenarios_refined_usecase.dart';
 import '../../domain/usecases/compare_scenarios_usecase.dart';
 import '../../domain/usecases/project_future_spending_usecase.dart';
 import '../../domain/usecases/simulate_reallocation_usecase.dart';
 import '../../domain/usecases/simulate_spending_enhanced_usecase.dart';
+import '../../domain/usecases/simulate_spending_refined_usecase.dart';
 import '../../domain/usecases/simulate_spending_usecase.dart';
 import 'simulation_event.dart';
 import 'simulation_state.dart';
@@ -10,20 +12,26 @@ import 'simulation_state.dart';
 class SimulationBloc extends Bloc<SimulationEvent, SimulationState> {
   final SimulateSpendingUseCase simulateSpendingUseCase;
   final SimulateSpendingEnhancedUseCase simulateSpendingEnhancedUseCase;
+  final SimulateSpendingRefinedUseCase simulateSpendingRefinedUseCase;
   final CompareScenariosUseCase compareScenariosUseCase;
+  final CompareScenariosRefinedUseCase compareScenariosRefinedUseCase;
   final SimulateReallocationUseCase simulateReallocationUseCase;
   final ProjectFutureSpendingUseCase projectFutureSpendingUseCase;
 
   SimulationBloc({
     required this.simulateSpendingUseCase,
     required this.simulateSpendingEnhancedUseCase,
+    required this.simulateSpendingRefinedUseCase,
     required this.compareScenariosUseCase,
+    required this.compareScenariosRefinedUseCase,
     required this.simulateReallocationUseCase,
     required this.projectFutureSpendingUseCase,
   }) : super(SimulationInitial()) {
     on<SimulateSpendingEvent>(_onSimulateSpending);
     on<SimulateSpendingEnhancedEvent>(_onSimulateSpendingEnhanced);
+    on<SimulateSpendingRefinedEvent>(_onSimulateSpendingRefined);
     on<CompareScenariosEvent>(_onCompareScenarios);
+    on<CompareScenariosRefinedEvent>(_onCompareScenariosRefined);
     on<SimulateReallocationEvent>(_onSimulateReallocation);
     on<ProjectFutureSpendingEvent>(_onProjectFutureSpending);
   }
@@ -74,6 +82,29 @@ class SimulationBloc extends Bloc<SimulationEvent, SimulationState> {
     );
   }
 
+  Future<void> _onSimulateSpendingRefined(
+    SimulateSpendingRefinedEvent event,
+    Emitter<SimulationState> emit,
+  ) async {
+    emit(SimulationLoading());
+
+    final result = await simulateSpendingRefinedUseCase(
+      SimulateSpendingRefinedParams(
+        token: event.token,
+        userId: event.userId,
+        scenarioType: event.scenarioType,
+        targetPercent: event.targetPercent,
+        timePeriodDays: event.timePeriodDays,
+        targetCategories: event.targetCategories,
+      ),
+    );
+
+    result.fold(
+      (failure) => emit(SimulationError(failure.message)),
+      (response) => emit(SimulationRefinedLoaded(response)),
+    );
+  }
+
   Future<void> _onCompareScenarios(
     CompareScenariosEvent event,
     Emitter<SimulationState> emit,
@@ -93,6 +124,28 @@ class SimulationBloc extends Bloc<SimulationEvent, SimulationState> {
     result.fold(
       (failure) => emit(SimulationError(failure.message)),
       (comparison) => emit(ScenariosCompared(comparison)),
+    );
+  }
+
+  Future<void> _onCompareScenariosRefined(
+    CompareScenariosRefinedEvent event,
+    Emitter<SimulationState> emit,
+  ) async {
+    emit(SimulationLoading());
+
+    final result = await compareScenariosRefinedUseCase(
+      CompareScenariosRefinedParams(
+        token: event.token,
+        userId: event.userId,
+        scenarioType: event.scenarioType,
+        timePeriodDays: event.timePeriodDays,
+        numScenarios: event.numScenarios,
+      ),
+    );
+
+    result.fold(
+      (failure) => emit(SimulationError(failure.message)),
+      (response) => emit(ComparisonRefinedLoaded(response)),
     );
   }
 

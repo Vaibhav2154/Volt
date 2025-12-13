@@ -46,16 +46,24 @@ class ApiConstants {
   static const String simulationBaseEndpoint = '/api/users';
   static String simulationBehaviorEndpoint(int userId) => '$simulationBaseEndpoint/$userId/behavior';
   static String simulationEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate';
+  static String simulationRefinedEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate/refined';
   static String simulationEnhancedEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate/enhanced';
   static String simulationCompareEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate/compare';
+  static String simulationCompareRefinedEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate/compare/refined';
   static String simulationCompareEnhancedEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate/compare/enhanced';
   static String simulationReallocateEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate/reallocate';
   static String simulationProjectEndpoint(int userId) => '$simulationBaseEndpoint/$userId/simulate/project';
-  static String simulationBehaviorSummaryEndpoint(int userId) => '$simulationBaseEndpoint/$userId/behavior/summary';
+  // Insights endpoints
+  static String dashboardInsightsEndpoint(int userId) => '$simulationBaseEndpoint/$userId/insights/dashboard';
+  static String behaviorSummaryEndpoint(int userId) => '$simulationBaseEndpoint/$userId/insights/behavior-summary';
   
   // Gamification endpoints
   static const String gamificationProfileEndpoint = '/gamification/profile';
   static const String gamificationFeedEndpoint = '/gamification/feed';
+  
+  // Health Score & Timeline endpoints
+  static String healthScoreEndpoint(int userId) => '/users/$userId/health-score';
+  static String animatedTimelineEndpoint(int userId) => '/users/$userId/animated-timeline';
   
   // Headers
   static const String contentType = 'application/json';

@@ -7,10 +7,8 @@ import '../../features/transactions/presentation/bloc/transaction_bloc.dart';
 import '../../features/transactions/presentation/bloc/transaction_event.dart';
 import '../../features/goals/presentation/pages/goals_page.dart';
 import '../../features/goals/presentation/bloc/goal_bloc.dart';
-import '../../features/goals/presentation/bloc/goal_event.dart';
 import '../../features/lean_week/presentation/pages/lean_week_page.dart';
 import '../../features/lean_week/presentation/bloc/lean_week_bloc.dart';
-import '../../features/auth/data/datasources/auth_local_data_source.dart';
 
 /// Main navigation structure with bottom navigation bar
 class MainNavigator extends StatefulWidget {
@@ -22,24 +20,16 @@ class MainNavigator extends StatefulWidget {
 
 class _MainNavigatorState extends State<MainNavigator> {
   int _currentIndex = 0;
-  String? _token;
+  late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
-    _loadToken();
+    _initializePages();
   }
 
-  Future<void> _loadToken() async {
-    final authLocalDataSource = sl<AuthLocalDataSource>();
-    final token = await authLocalDataSource.getToken();
-    setState(() {
-      _token = token;
-    });
-  }
-
-  List<Widget> get _pages {
-    return [
+  void _initializePages() {
+    _pages = [
       BlocProvider(
         create: (_) => sl<TransactionBloc>()..add(const LoadTransactionsEvent()),
         child: const DashboardPage(),
@@ -49,13 +39,7 @@ class _MainNavigatorState extends State<MainNavigator> {
         child: const TransactionsPage(),
       ),
       BlocProvider(
-        create: (_) {
-          final bloc = sl<GoalBloc>();
-          if (_token != null) {
-            bloc.add(LoadGoalsWithProgressEvent(token: _token!));
-          }
-          return bloc;
-        },
+        create: (_) => sl<GoalBloc>(),
         child: const GoalsPage(),
       ),
       BlocProvider(

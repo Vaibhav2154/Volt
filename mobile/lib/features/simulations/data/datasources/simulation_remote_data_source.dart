@@ -3,6 +3,8 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/exceptions.dart';
 import '../models/projection_response_model.dart';
 import '../models/reallocation_response_model.dart';
+import '../models/refined_comparison_response_model.dart';
+import '../models/refined_simulation_response_model.dart';
 import '../models/scenario_comparison_model.dart';
 import '../models/scenario_insight_model.dart';
 import '../models/simulation_response_model.dart';
@@ -48,6 +50,23 @@ abstract class SimulationRemoteDataSource {
     int timePeriodDays = 30,
     String? scenarioId,
     Map<String, double>? behavioralChanges,
+  });
+
+  Future<RefinedSimulationResponseModel> simulateSpendingRefined({
+    required String token,
+    required int userId,
+    required String scenarioType,
+    required double targetPercent,
+    int timePeriodDays = 30,
+    List<String>? targetCategories,
+  });
+
+  Future<RefinedComparisonResponseModel> compareScenariosRefined({
+    required String token,
+    required int userId,
+    required String scenarioType,
+    int timePeriodDays = 30,
+    int numScenarios = 3,
   });
 }
 
@@ -266,6 +285,96 @@ class SimulationRemoteDataSourceImpl implements SimulationRemoteDataSource {
         return ProjectionResponseModel.fromJson(response.data);
       } else {
         throw const ServerException('Failed to project future spending');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw const UnauthorizedException('Invalid or expired token');
+      }
+      if (e.response?.statusCode == 404) {
+        throw const NotFoundException('User or behavior model not found');
+      }
+      throw ServerException(e.message ?? 'Network error occurred');
+    } catch (e) {
+      if (e is ServerException || e is UnauthorizedException || e is NotFoundException) {
+        rethrow;
+      }
+      throw ServerException('Failed to parse response: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<RefinedSimulationResponseModel> simulateSpendingRefined({
+    required String token,
+    required int userId,
+    required String scenarioType,
+    required double targetPercent,
+    int timePeriodDays = 30,
+    List<String>? targetCategories,
+  }) async {
+    try {
+      final response = await dio.post(
+        ApiConstants.simulationRefinedEndpoint(userId),
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+        data: {
+          'scenario_type': scenarioType,
+          'target_percent': targetPercent,
+          'time_period_days': timePeriodDays,
+          if (targetCategories != null) 'target_categories': targetCategories,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return RefinedSimulationResponseModel.fromJson(response.data);
+      } else {
+        throw const ServerException('Failed to simulate spending with refined insight');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw const UnauthorizedException('Invalid or expired token');
+      }
+      if (e.response?.statusCode == 404) {
+        throw const NotFoundException('User or behavior model not found');
+      }
+      throw ServerException(e.message ?? 'Network error occurred');
+    } catch (e) {
+      if (e is ServerException || e is UnauthorizedException || e is NotFoundException) {
+        rethrow;
+      }
+      throw ServerException('Failed to parse response: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<RefinedComparisonResponseModel> compareScenariosRefined({
+    required String token,
+    required int userId,
+    required String scenarioType,
+    int timePeriodDays = 30,
+    int numScenarios = 3,
+  }) async {
+    try {
+      final response = await dio.post(
+        ApiConstants.simulationCompareRefinedEndpoint(userId),
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+        data: {
+          'scenario_type': scenarioType,
+          'time_period_days': timePeriodDays,
+          'num_scenarios': numScenarios,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return RefinedComparisonResponseModel.fromJson(response.data);
+      } else {
+        throw const ServerException('Failed to compare scenarios with refined insight');
       }
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {

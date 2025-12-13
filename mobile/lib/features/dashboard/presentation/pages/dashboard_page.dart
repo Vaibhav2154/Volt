@@ -12,6 +12,10 @@ import '../../../simulations/presentation/pages/simulations_page.dart';
 import '../../../simulations/presentation/bloc/simulation_bloc.dart';
 import '../../../gamification/presentation/pages/gamification_page.dart';
 import '../../../gamification/presentation/bloc/gamification_bloc.dart';
+import '../../../health_score/presentation/pages/health_score_page.dart';
+import '../../../health_score/presentation/bloc/health_score_bloc.dart';
+import '../../../timeline/presentation/pages/timeline_page.dart';
+import '../../../timeline/presentation/bloc/timeline_bloc.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../../init_dependencies.dart';
@@ -255,7 +259,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        // Single row with Simulations and Achievements
+                        // First row with Simulations and Achievements
                         Row(
                           children: [
                             Expanded(
@@ -289,6 +293,49 @@ class _DashboardPageState extends State<DashboardPage> {
                                       builder: (_) => BlocProvider(
                                         create: (_) => sl<GamificationBloc>(),
                                         child: const GamificationPage(),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        // Second row with Health Score and Timeline
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildQuickActionButton(
+                                context,
+                                theme,
+                                Icons.favorite,
+                                'Health Score',
+                                () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => BlocProvider(
+                                        create: (_) => sl<HealthScoreBloc>(),
+                                        child: const HealthScorePage(),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildQuickActionButton(
+                                context,
+                                theme,
+                                Icons.timeline,
+                                'Timeline',
+                                () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => BlocProvider(
+                                        create: (_) => sl<TimelineBloc>(),
+                                        child: const TimelinePage(),
                                       ),
                                     ),
                                   );

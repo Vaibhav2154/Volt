@@ -4,6 +4,8 @@ import '../../../../core/error/failures.dart';
 import '../../../../core/network/network_info.dart';
 import '../../domain/entities/projection_response.dart';
 import '../../domain/entities/reallocation_response.dart';
+import '../../domain/entities/refined_comparison_response.dart';
+import '../../domain/entities/refined_simulation_response.dart';
 import '../../domain/entities/scenario_comparison.dart';
 import '../../domain/entities/scenario_insight.dart';
 import '../../domain/entities/simulation_response.dart';
@@ -170,6 +172,72 @@ class SimulationRepositoryImpl implements SimulationRepository {
         timePeriodDays: timePeriodDays,
         scenarioId: scenarioId,
         behavioralChanges: behavioralChanges,
+      );
+      return Right(result);
+    } on UnauthorizedException catch (e) {
+      return Left(UnauthorizedFailure(e.message));
+    } on NotFoundException catch (e) {
+      return Left(NotFoundFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('An unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, RefinedSimulationResponse>> simulateSpendingRefined({
+    required String token,
+    required int userId,
+    required String scenarioType,
+    required double targetPercent,
+    int timePeriodDays = 30,
+    List<String>? targetCategories,
+  }) async {
+    if (!await networkInfo.isConnected()) {
+      return const Left(NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final result = await remoteDataSource.simulateSpendingRefined(
+        token: token,
+        userId: userId,
+        scenarioType: scenarioType,
+        targetPercent: targetPercent,
+        timePeriodDays: timePeriodDays,
+        targetCategories: targetCategories,
+      );
+      return Right(result);
+    } on UnauthorizedException catch (e) {
+      return Left(UnauthorizedFailure(e.message));
+    } on NotFoundException catch (e) {
+      return Left(NotFoundFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('An unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, RefinedComparisonResponse>> compareScenariosRefined({
+    required String token,
+    required int userId,
+    required String scenarioType,
+    int timePeriodDays = 30,
+    int numScenarios = 3,
+  }) async {
+    if (!await networkInfo.isConnected()) {
+      return const Left(NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final result = await remoteDataSource.compareScenariosRefined(
+        token: token,
+        userId: userId,
+        scenarioType: scenarioType,
+        timePeriodDays: timePeriodDays,
+        numScenarios: numScenarios,
       );
       return Right(result);
     } on UnauthorizedException catch (e) {

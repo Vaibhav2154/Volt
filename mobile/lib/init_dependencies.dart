@@ -69,10 +69,12 @@ import 'features/goals/presentation/bloc/goal_bloc.dart';
 import 'features/simulations/data/datasources/simulation_remote_data_source.dart';
 import 'features/simulations/data/repositories/simulation_repository_impl.dart';
 import 'features/simulations/domain/repositories/simulation_repository.dart';
+import 'features/simulations/domain/usecases/compare_scenarios_refined_usecase.dart';
 import 'features/simulations/domain/usecases/compare_scenarios_usecase.dart';
 import 'features/simulations/domain/usecases/project_future_spending_usecase.dart';
 import 'features/simulations/domain/usecases/simulate_reallocation_usecase.dart';
 import 'features/simulations/domain/usecases/simulate_spending_enhanced_usecase.dart';
+import 'features/simulations/domain/usecases/simulate_spending_refined_usecase.dart';
 import 'features/simulations/domain/usecases/simulate_spending_usecase.dart';
 import 'features/simulations/presentation/bloc/simulation_bloc.dart';
 import 'features/gamification/data/datasources/gamification_remote_data_source.dart';
@@ -81,6 +83,16 @@ import 'features/gamification/domain/repositories/gamification_repository.dart';
 import 'features/gamification/domain/usecases/get_gamification_feed_usecase.dart';
 import 'features/gamification/domain/usecases/get_gamification_profile_usecase.dart';
 import 'features/gamification/presentation/bloc/gamification_bloc.dart';
+import 'features/health_score/data/datasources/health_score_remote_data_source.dart';
+import 'features/health_score/data/repositories/health_score_repository_impl.dart';
+import 'features/health_score/domain/repositories/health_score_repository.dart';
+import 'features/health_score/domain/usecases/get_health_score_usecase.dart';
+import 'features/health_score/presentation/bloc/health_score_bloc.dart';
+import 'features/timeline/data/datasources/timeline_remote_data_source.dart';
+import 'features/timeline/data/repositories/timeline_repository_impl.dart';
+import 'features/timeline/domain/repositories/timeline_repository.dart';
+import 'features/timeline/domain/usecases/get_animated_timeline_usecase.dart';
+import 'features/timeline/presentation/bloc/timeline_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -148,6 +160,12 @@ Future<void> initDependencies() async {
 
   // Gamification feature
   _initGamification();
+
+  // Health Score feature
+  _initHealthScore();
+
+  // Timeline feature
+  _initTimeline();
 }
 
 void _initAuth() {
@@ -415,7 +433,9 @@ void _initSimulations() {
   // Use cases
   sl.registerLazySingleton(() => SimulateSpendingUseCase(sl()));
   sl.registerLazySingleton(() => SimulateSpendingEnhancedUseCase(sl()));
+  sl.registerLazySingleton(() => SimulateSpendingRefinedUseCase(sl()));
   sl.registerLazySingleton(() => CompareScenariosUseCase(sl()));
+  sl.registerLazySingleton(() => CompareScenariosRefinedUseCase(sl()));
   sl.registerLazySingleton(() => SimulateReallocationUseCase(sl()));
   sl.registerLazySingleton(() => ProjectFutureSpendingUseCase(sl()));
 
@@ -424,7 +444,9 @@ void _initSimulations() {
     () => SimulationBloc(
       simulateSpendingUseCase: sl(),
       simulateSpendingEnhancedUseCase: sl(),
+      simulateSpendingRefinedUseCase: sl(),
       compareScenariosUseCase: sl(),
+      compareScenariosRefinedUseCase: sl(),
       simulateReallocationUseCase: sl(),
       projectFutureSpendingUseCase: sl(),
     ),
@@ -455,6 +477,56 @@ void _initGamification() {
     () => GamificationBloc(
       getProfileUseCase: sl(),
       getFeedUseCase: sl(),
+    ),
+  );
+}
+
+void _initHealthScore() {
+  // Data sources
+  sl.registerLazySingleton<HealthScoreRemoteDataSource>(
+    () => HealthScoreRemoteDataSourceImpl(sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<HealthScoreRepository>(
+    () => HealthScoreRepositoryImpl(
+      remoteDataSource: sl(),
+      networkInfo: sl(),
+    ),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetHealthScoreUseCase(sl()));
+
+  // BLoC
+  sl.registerFactory(
+    () => HealthScoreBloc(
+      getHealthScoreUseCase: sl(),
+    ),
+  );
+}
+
+void _initTimeline() {
+  // Data sources
+  sl.registerLazySingleton<TimelineRemoteDataSource>(
+    () => TimelineRemoteDataSourceImpl(sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<TimelineRepository>(
+    () => TimelineRepositoryImpl(
+      remoteDataSource: sl(),
+      networkInfo: sl(),
+    ),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetAnimatedTimelineUseCase(sl()));
+
+  // BLoC
+  sl.registerFactory(
+    () => TimelineBloc(
+      getAnimatedTimelineUseCase: sl(),
     ),
   );
 }

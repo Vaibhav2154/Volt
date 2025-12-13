@@ -133,6 +133,59 @@ class ProjectFutureSpendingEvent extends SimulationEvent {
       ];
 }
 
+class SimulateSpendingRefinedEvent extends SimulationEvent {
+  final String token;
+  final int userId;
+  final String scenarioType;
+  final double targetPercent;
+  final int timePeriodDays;
+  final List<String>? targetCategories;
+
+  const SimulateSpendingRefinedEvent({
+    required this.token,
+    required this.userId,
+    required this.scenarioType,
+    required this.targetPercent,
+    this.timePeriodDays = 30,
+    this.targetCategories,
+  });
+
+  @override
+  List<Object?> get props => [
+        token,
+        userId,
+        scenarioType,
+        targetPercent,
+        timePeriodDays,
+        targetCategories,
+      ];
+}
+
+class CompareScenariosRefinedEvent extends SimulationEvent {
+  final String token;
+  final int userId;
+  final String scenarioType;
+  final int timePeriodDays;
+  final int numScenarios;
+
+  const CompareScenariosRefinedEvent({
+    required this.token,
+    required this.userId,
+    required this.scenarioType,
+    this.timePeriodDays = 30,
+    this.numScenarios = 3,
+  });
+
+  @override
+  List<Object?> get props => [
+        token,
+        userId,
+        scenarioType,
+        timePeriodDays,
+        numScenarios,
+      ];
+}
+
 
 
 

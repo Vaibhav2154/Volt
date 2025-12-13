@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/projection_response.dart';
 import '../../domain/entities/reallocation_response.dart';
+import '../../domain/entities/refined_comparison_response.dart';
+import '../../domain/entities/refined_simulation_response.dart';
 import '../../domain/entities/scenario_comparison.dart';
 import '../../domain/entities/scenario_insight.dart';
 import '../../domain/entities/simulation_response.dart';
@@ -56,6 +58,24 @@ class FutureSpendingProjected extends SimulationState {
   final ProjectionResponse response;
 
   const FutureSpendingProjected(this.response);
+
+  @override
+  List<Object?> get props => [response];
+}
+
+class SimulationRefinedLoaded extends SimulationState {
+  final RefinedSimulationResponse response;
+
+  const SimulationRefinedLoaded(this.response);
+
+  @override
+  List<Object?> get props => [response];
+}
+
+class ComparisonRefinedLoaded extends SimulationState {
+  final RefinedComparisonResponse response;
+
+  const ComparisonRefinedLoaded(this.response);
 
   @override
   List<Object?> get props => [response];

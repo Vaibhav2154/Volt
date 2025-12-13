@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/usecases/usecase.dart';
+import '../../../../core/error/failures.dart';
+import '../../domain/entities/user.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/is_authenticated_usecase.dart';
 import '../../domain/usecases/login_usecase.dart';
@@ -30,26 +32,62 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLogin(LoginEvent event, Emitter<AuthState> emit) async {
+    // Always start fresh from loading state
     emit(AuthLoading());
 
-    final result = await loginUseCase(
+    final loginResult = await loginUseCase(
       LoginParams(
         email: event.email,
         password: event.password,
       ),
     );
 
-    await result.fold(
-      (failure) async => emit(AuthError(failure.message)),
-      (tokens) async {
-        // After successful login, get user data
-        final userResult = await getCurrentUserUseCase(NoParams());
-        userResult.fold(
-          (failure) => emit(AuthError(failure.message)),
-          (user) => emit(AuthAuthenticated(user)),
-        );
-      },
+    // Handle login result sequentially
+    final loginFailure = loginResult.fold<Failure?>(
+      (failure) => failure,
+      (tokens) => null,
     );
+
+    if (loginFailure != null) {
+      if (!emit.isDone) {
+        emit(AuthError(loginFailure.message));
+      }
+      return;
+    }
+
+    // Login successful - the repository already cached the user during login
+    // Get user data (will use cached user if available)
+    final userResult = await getCurrentUserUseCase(NoParams());
+    
+    // Check if emitter is still active before emitting
+    if (emit.isDone) {
+      return;
+    }
+    
+    // Extract user or failure
+    final userFailure = userResult.fold<Failure?>(
+      (failure) => failure,
+      (user) => null,
+    );
+    
+    if (userFailure != null) {
+      if (!emit.isDone) {
+        emit(AuthError(userFailure.message));
+      }
+      return;
+    }
+    
+    // Extract user
+    final user = userResult.fold<User?>(
+      (failure) => null,
+      (user) => user,
+    );
+    
+    if (user != null && !emit.isDone) {
+      emit(AuthAuthenticated(user));
+    } else if (user == null && !emit.isDone) {
+      emit(AuthError('Failed to get user data'));
+    }
   }
 
   Future<void> _onRegister(RegisterEvent event, Emitter<AuthState> emit) async {

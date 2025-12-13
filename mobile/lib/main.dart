@@ -47,17 +47,39 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, state) {
+        // Handle navigation on state changes
+        if (state is AuthUnauthenticated) {
+          // Ensure we're showing login page - navigation handled by builder
+        }
+      },
+      buildWhen: (previous, current) {
+        // Rebuild on any state change
+        return true;
+      },
       builder: (context, state) {
+        // Handle loading and initial states
         if (state is AuthLoading || state is AuthInitial) {
           return const Scaffold(
             body: LoadingState(message: 'Checking your account...'),
           );
-        } else if (state is AuthAuthenticated) {
+        }
+        
+        // Handle authenticated state - show main app
+        if (state is AuthAuthenticated) {
           return const MainNavigator();
-        } else {
+        }
+        
+        // Handle registration success - show login page
+        if (state is AuthRegistrationSuccess) {
           return const LoginPage();
         }
+        
+        // Handle unauthenticated, error, or any other state - show login page
+        // This includes AuthUnauthenticated and AuthError states
+        // This ensures that after logout, the login page is shown
+        return const LoginPage();
       },
     );
   }

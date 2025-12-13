@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../init_dependencies.dart';
-import '../../../../core/theme/app_pallette.dart';
+import '../../../../core/widgets/state_widgets.dart';
+import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../features/auth/data/datasources/auth_local_data_source.dart';
 import '../bloc/lean_week_bloc.dart';
 import '../bloc/lean_week_event.dart';
@@ -16,38 +18,63 @@ class LeanWeekPage extends StatefulWidget {
 
 class _LeanWeekPageState extends State<LeanWeekPage>
     with SingleTickerProviderStateMixin {
-  String? _token;
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadToken();
+    _tabController.addListener(_handleTabChange);
+    _loadAnalysis();
+  }
+
+  void _handleTabChange() {
+    if (!_tabController.indexIsChanging) {
+      // Tab change completed, load data for the new tab
+      _loadDataForTab(_tabController.index);
+    }
+  }
+
+  Future<void> _loadDataForTab(int index) async {
+    final authLocalDataSource = sl<AuthLocalDataSource>();
+    final token = await authLocalDataSource.getToken();
+    if (token == null) return;
+
+    switch (index) {
+      case 0:
+        _loadAnalysis();
+        break;
+      case 1:
+        context.read<LeanWeekBloc>().add(
+              GetCashFlowForecastEvent(token: token),
+            );
+        break;
+      case 2:
+        context.read<LeanWeekBloc>().add(
+              GetIncomeSmoothingRecommendationsEvent(token: token),
+            );
+        break;
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadToken() async {
-    final authLocalDataSource = sl<AuthLocalDataSource>();
-    final token = await authLocalDataSource.getToken();
-    setState(() {
-      _token = token;
-    });
-    if (_token != null) {
-      _loadAnalysis();
+  Future<void> _loadAnalysis() async {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      final authLocalDataSource = sl<AuthLocalDataSource>();
+      final token = await authLocalDataSource.getToken();
+      if (token != null) {
+        context.read<LeanWeekBloc>().add(
+              GetLeanWeekAnalysisEvent(token: token),
+            );
+      }
     }
-  }
-
-  void _loadAnalysis() {
-    if (_token == null) return;
-    context.read<LeanWeekBloc>().add(
-          GetLeanWeekAnalysisEvent(token: _token!),
-        );
   }
 
   @override
@@ -56,121 +83,301 @@ class _LeanWeekPageState extends State<LeanWeekPage>
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        elevation: 0,
-        title: Text(
-          'Lean Week Analysis',
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          onTap: (index) {
-            if (_token != null) {
-              switch (index) {
-                case 0:
-                  _loadAnalysis();
-                  break;
-                case 1:
-                  context.read<LeanWeekBloc>().add(
-                        GetCashFlowForecastEvent(token: _token!),
-                      );
-                  break;
-                case 2:
-                  context.read<LeanWeekBloc>().add(
-                        GetIncomeSmoothingRecommendationsEvent(token: _token!),
-                      );
-                  break;
+      body: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, authState) {
+          if (authState is! AuthAuthenticated) {
+            return const LoadingState(message: 'Loading...');
+          }
+
+          return BlocConsumer<LeanWeekBloc, LeanWeekState>(
+            listener: (context, state) {
+              if (state is LeanWeekError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: theme.colorScheme.error,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                );
               }
-            }
-          },
-          tabs: const [
-            Tab(text: 'Overview', icon: Icon(Icons.dashboard)),
-            Tab(text: 'Forecast', icon: Icon(Icons.trending_up)),
-            Tab(text: 'Recommendations', icon: Icon(Icons.lightbulb)),
-          ],
-        ),
-      ),
-      body: BlocConsumer<LeanWeekBloc, LeanWeekState>(
-        listener: (context, state) {
-          if (state is LeanWeekError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: theme.colorScheme.error,
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is LeanWeekLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (state is LeanWeekAnalysisLoaded) {
-            return _buildOverviewTab(context, state.analysis);
-          }
-
-          if (state is CashFlowForecastLoaded) {
-            return _buildForecastTab(context, state.forecast);
-          }
-
-          if (state is IncomeSmoothingRecommendationsLoaded) {
-            return _buildRecommendationsTab(context, state.recommendations);
-          }
-
-          if (state is LeanWeekError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: theme.colorScheme.error,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    state.message,
-                    style: TextStyle(color: theme.colorScheme.error),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadAnalysis,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.analytics_outlined,
-                  size: 64,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Tap to load analysis',
-                  style: TextStyle(color: theme.colorScheme.onSurface),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _loadAnalysis,
-                  child: const Text('Load Analysis'),
-                ),
-              ],
-            ),
+            },
+            builder: (context, state) {
+              return NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) {
+                  return [
+                    SliverAppBar(
+                      expandedHeight: 100,
+                      floating: false,
+                      pinned: true,
+                      backgroundColor: theme.scaffoldBackgroundColor,
+                      elevation: 0,
+                      flexibleSpace: FlexibleSpaceBar(
+                        title: Text(
+                          'Lean Week Analysis',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                          ),
+                        ),
+                        centerTitle: false,
+                        titlePadding: const EdgeInsets.only(left: 16, bottom: 8),
+                      ),
+                    ),
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _SliverAppBarDelegate(
+                        TabBar(
+                          controller: _tabController,
+                          labelColor: theme.colorScheme.primary,
+                          unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.6),
+                          indicatorColor: theme.colorScheme.primary,
+                          tabs: const [
+                            Tab(text: 'Overview', icon: Icon(Icons.dashboard)),
+                            Tab(text: 'Forecast', icon: Icon(Icons.trending_up)),
+                            Tab(text: 'Recommendations', icon: Icon(Icons.lightbulb)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ];
+                },
+                body: _buildTabBarView(context, state),
+              );
+            },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildTabBarView(BuildContext context, LeanWeekState state) {
+    return TabBarView(
+      controller: _tabController,
+      children: [
+        _buildOverviewTabView(context, state),
+        _buildForecastTabView(context, state),
+        _buildRecommendationsTabView(context, state),
+      ],
+    );
+  }
+
+  Widget _buildOverviewTabView(BuildContext context, LeanWeekState state) {
+    if (state is LeanWeekLoading) {
+      return const Center(
+        child: LoadingState(message: 'Loading analysis...'),
+      );
+    }
+
+    if (state is LeanWeekAnalysisLoaded) {
+      return _buildOverviewTab(context, state.analysis);
+    }
+
+    if (state is LeanWeekError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              state.message,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadAnalysis,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.analytics_outlined,
+            size: 64,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Tap to load analysis',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _loadAnalysis,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            ),
+            child: const Text('Load Analysis'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildForecastTabView(BuildContext context, LeanWeekState state) {
+    if (state is LeanWeekLoading) {
+      return const Center(
+        child: LoadingState(message: 'Loading forecast...'),
+      );
+    }
+
+    if (state is CashFlowForecastLoaded) {
+      return _buildForecastTab(context, state.forecast);
+    }
+
+    if (state is LeanWeekError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              state.message,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () async {
+                final authLocalDataSource = sl<AuthLocalDataSource>();
+                final token = await authLocalDataSource.getToken();
+                if (token != null) {
+                  context.read<LeanWeekBloc>().add(
+                        GetCashFlowForecastEvent(token: token),
+                      );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.trending_up,
+            size: 64,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Tap to load forecast',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendationsTabView(BuildContext context, LeanWeekState state) {
+    if (state is LeanWeekLoading) {
+      return const Center(
+        child: LoadingState(message: 'Loading recommendations...'),
+      );
+    }
+
+    if (state is IncomeSmoothingRecommendationsLoaded) {
+      return _buildRecommendationsTab(context, state.recommendations);
+    }
+
+    if (state is LeanWeekError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              state.message,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () async {
+                final authLocalDataSource = sl<AuthLocalDataSource>();
+                final token = await authLocalDataSource.getToken();
+                if (token != null) {
+                  context.read<LeanWeekBloc>().add(
+                        GetIncomeSmoothingRecommendationsEvent(token: token),
+                      );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.lightbulb,
+            size: 64,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Tap to load recommendations',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -178,282 +385,313 @@ class _LeanWeekPageState extends State<LeanWeekPage>
   Widget _buildOverviewTab(BuildContext context, analysis) {
     final theme = Theme.of(context);
     final summary = analysis.summary;
-    final riskColor = _getRiskColor(summary.riskLevel);
+    final riskColor = _getRiskColor(summary.riskLevel, theme);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Risk Summary Card
-          Card(
-            color: riskColor.withOpacity(0.1),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        _getRiskIcon(summary.riskLevel),
-                        color: riskColor,
-                        size: 32,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Risk Level: ${summary.riskLevel}',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: riskColor,
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              // Risk Summary Card
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: riskColor.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          _getRiskIcon(summary.riskLevel),
+                          color: riskColor,
+                          size: 32,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Risk Level: ${summary.riskLevel}',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: riskColor,
+                                ),
                               ),
+                              const SizedBox(height: 4),
+                              Text(
+                                summary.riskMessage,
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (summary.immediateActionNeeded) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.error.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: theme.colorScheme.error.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.warning,
+                              color: theme.colorScheme.error,
+                              size: 20,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              summary.riskMessage,
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurface,
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Immediate action required',
+                                style: TextStyle(
+                                  color: theme.colorScheme.error,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
                     ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Historical Analysis
+              Text(
+                'Historical Analysis',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Lean Frequency',
+                      '${(analysis.historicalAnalysis.monthly.leanFrequency * 100).toStringAsFixed(1)}%',
+                      Icons.trending_down,
+                      theme.colorScheme.error,
+                    ),
                   ),
-                  if (summary.immediateActionNeeded) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: ColorPalette.errorLight,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.warning, color: ColorPalette.error),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Immediate action required',
-                              style: TextStyle(
-                                color: ColorPalette.error,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Avg Severity',
+                      '₹${analysis.historicalAnalysis.monthly.avgLeanSeverity.toStringAsFixed(2)}',
+                      Icons.attach_money,
+                      theme.colorScheme.error,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Cash Flow Forecast Summary
+              Text(
+                'Forecast Summary',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withOpacity(0.1),
+                  ),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _buildForecastRow(
+                      context,
+                      'Avg Monthly Income',
+                      '₹${analysis.cashFlowForecast.avgMonthlyIncome.toStringAsFixed(2)}',
+                    ),
+                    const Divider(height: 24),
+                    _buildForecastRow(
+                      context,
+                      'Avg Monthly Expenses',
+                      '₹${analysis.cashFlowForecast.avgMonthlyExpenses.toStringAsFixed(2)}',
+                    ),
+                    const Divider(height: 24),
+                    _buildForecastRow(
+                      context,
+                      'Income Volatility',
+                      '${(analysis.cashFlowForecast.incomeVolatility * 100).toStringAsFixed(1)}%',
                     ),
                   ],
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Historical Analysis
-          Text(
-            'Historical Analysis',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Lean Frequency',
-                  '${(analysis.historicalAnalysis.monthly.leanFrequency * 100).toStringAsFixed(1)}%',
-                  Icons.trending_down,
-                  ColorPalette.warning,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Avg Severity',
-                  '₹${analysis.historicalAnalysis.monthly.avgLeanSeverity.toStringAsFixed(2)}',
-                  Icons.attach_money,
-                  ColorPalette.error,
+              const SizedBox(height: 16),
+
+              // Warnings
+              if (analysis.cashFlowForecast.warnings.isNotEmpty) ...[
+                Text(
+                  'Warnings',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                ...analysis.cashFlowForecast.warnings.map((warning) => Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: theme.colorScheme.error.withOpacity(0.3),
+                        ),
+                      ),
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.warning,
+                          color: theme.colorScheme.error,
+                        ),
+                        title: Text(
+                          warning,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    )),
+              ],
+            ]),
           ),
-          const SizedBox(height: 16),
-
-          // Cash Flow Forecast Summary
-          Text(
-            'Forecast Summary',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildForecastRow(
-                    context,
-                    'Avg Monthly Income',
-                    '₹${analysis.cashFlowForecast.avgMonthlyIncome.toStringAsFixed(2)}',
-                  ),
-                  const Divider(),
-                  _buildForecastRow(
-                    context,
-                    'Avg Monthly Expenses',
-                    '₹${analysis.cashFlowForecast.avgMonthlyExpenses.toStringAsFixed(2)}',
-                  ),
-                  const Divider(),
-                  _buildForecastRow(
-                    context,
-                    'Income Volatility',
-                    '${(analysis.cashFlowForecast.incomeVolatility * 100).toStringAsFixed(1)}%',
-                  ),
-                  const Divider(),
-                  _buildForecastRow(
-                    context,
-                    'Confidence',
-                    '${(analysis.cashFlowForecast.confidence * 100).toStringAsFixed(1)}%',
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Warnings
-          if (analysis.cashFlowForecast.warnings.isNotEmpty) ...[
-            Text(
-              'Warnings',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ...analysis.cashFlowForecast.warnings.map((warning) => Card(
-                  color: ColorPalette.warningLight,
-                  child: ListTile(
-                    leading: const Icon(Icons.warning, color: ColorPalette.warning),
-                    title: Text(warning),
-                  ),
-                )),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildForecastTab(BuildContext context, forecast) {
     final theme = Theme.of(context);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Summary Cards
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Avg Income',
-                  '₹${forecast.avgMonthlyIncome.toStringAsFixed(2)}',
-                  Icons.arrow_upward,
-                  ColorPalette.success,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Avg Expenses',
-                  '₹${forecast.avgMonthlyExpenses.toStringAsFixed(2)}',
-                  Icons.arrow_downward,
-                  ColorPalette.error,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Volatility',
-                  '${(forecast.incomeVolatility * 100).toStringAsFixed(1)}%',
-                  Icons.show_chart,
-                  ColorPalette.warning,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Confidence',
-                  '${(forecast.confidence * 100).toStringAsFixed(1)}%',
-                  Icons.verified,
-                  ColorPalette.info,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Forecast Periods
-          Text(
-            'Monthly Forecasts',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...forecast.forecasts.map((period) => _buildForecastPeriodCard(
-                context,
-                period,
-              )),
-          const SizedBox(height: 16),
-
-          // Warnings
-          if (forecast.warnings.isNotEmpty) ...[
-            Text(
-              'Warnings',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ...forecast.warnings.map((warning) => Card(
-                  color: ColorPalette.warningLight,
-                  child: ListTile(
-                    leading: const Icon(Icons.warning, color: ColorPalette.warning),
-                    title: Text(warning),
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              // Summary Cards
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Avg Income',
+                      '₹${forecast.avgMonthlyIncome.toStringAsFixed(2)}',
+                      Icons.arrow_upward,
+                      theme.colorScheme.primary,
+                    ),
                   ),
-                )),
-          ],
-        ],
-      ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Avg Expenses',
+                      '₹${forecast.avgMonthlyExpenses.toStringAsFixed(2)}',
+                      Icons.arrow_downward,
+                      theme.colorScheme.error,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildStatCard(
+                context,
+                'Volatility',
+                '${(forecast.incomeVolatility * 100).toStringAsFixed(1)}%',
+                Icons.show_chart,
+                theme.colorScheme.error,
+              ),
+              const SizedBox(height: 24),
+
+              // Forecast Periods
+              Text(
+                'Monthly Forecasts',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...forecast.forecasts.map((period) => _buildForecastPeriodCard(
+                    context,
+                    period,
+                  )),
+              const SizedBox(height: 16),
+
+              // Warnings
+              if (forecast.warnings.isNotEmpty) ...[
+                Text(
+                  'Warnings',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...forecast.warnings.map((warning) => Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: theme.colorScheme.error.withOpacity(0.3),
+                        ),
+                      ),
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.warning,
+                          color: theme.colorScheme.error,
+                        ),
+                        title: Text(
+                          warning,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    )),
+              ],
+            ]),
+          ),
+        ),
+      ],
     );
   }
 
@@ -461,193 +699,252 @@ class _LeanWeekPageState extends State<LeanWeekPage>
     final theme = Theme.of(context);
     final strategy = recommendations.strategy;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Emergency Fund Card
-          Card(
-            color: ColorPalette.infoLight,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.savings, color: ColorPalette.info, size: 32),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Emergency Fund',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
-                            Text(
-                              'Target: ₹${recommendations.targetEmergencyFund.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
-                          ],
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              // Emergency Fund Card
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.savings,
+                          color: theme.colorScheme.primary,
+                          size: 32,
                         ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Emergency Fund',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                              Text(
+                                'Target: ₹${recommendations.targetEmergencyFund.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    LinearProgressIndicator(
+                      value: recommendations.currentBalance /
+                          recommendations.targetEmergencyFund,
+                      backgroundColor: theme.colorScheme.surface.withOpacity(0.3),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        theme.colorScheme.primary,
+                      ),
+                      minHeight: 8,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Current: ₹${recommendations.currentBalance.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        Text(
+                          'Gap: ₹${recommendations.emergencyFundGap.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: theme.colorScheme.error,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Savings Recommendation
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withOpacity(0.1),
+                  ),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Savings Recommendation',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildRecommendationRow(
+                      context,
+                      'Monthly Save Amount',
+                      '₹${recommendations.monthlySaveAmount.toStringAsFixed(2)}',
+                    ),
+                    const Divider(height: 24),
+                    _buildRecommendationRow(
+                      context,
+                      'Save Rate',
+                      '${(recommendations.recommendedSaveRate * 100).toStringAsFixed(1)}%',
+                    ),
+                    if (recommendations.monthsToTarget != null) ...[
+                      const Divider(height: 24),
+                      _buildRecommendationRow(
+                        context,
+                        'Months to Target',
+                        '${recommendations.monthsToTarget!.toStringAsFixed(1)} months',
                       ),
                     ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Strategy
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withOpacity(0.1),
                   ),
-                  const SizedBox(height: 16),
-                  LinearProgressIndicator(
-                    value: recommendations.currentBalance /
-                        recommendations.targetEmergencyFund,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: const AlwaysStoppedAnimation<Color>(ColorPalette.info),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Current: ₹${recommendations.currentBalance.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurface,
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Strategy',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _getVolatilityColor(strategy.volatilityLevel, theme).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: _getVolatilityColor(strategy.volatilityLevel, theme).withOpacity(0.5),
                         ),
                       ),
-                      Text(
-                        'Gap: ₹${recommendations.emergencyFundGap.toStringAsFixed(2)}',
+                      child: Text(
+                        'Volatility: ${strategy.volatilityLevel.toUpperCase()}',
                         style: TextStyle(
-                          color: ColorPalette.warning,
+                          color: theme.colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Savings Recommendation
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Savings Recommendation',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildRecommendationRow(
-                    context,
-                    'Monthly Save Amount',
-                    '₹${recommendations.monthlySaveAmount.toStringAsFixed(2)}',
-                  ),
-                  const Divider(),
-                  _buildRecommendationRow(
-                    context,
-                    'Save Rate',
-                    '${(recommendations.recommendedSaveRate * 100).toStringAsFixed(1)}%',
-                  ),
-                  if (recommendations.monthsToTarget != null) ...[
-                    const Divider(),
-                    _buildRecommendationRow(
-                      context,
-                      'Months to Target',
-                      '${recommendations.monthsToTarget!.toStringAsFixed(1)} months',
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Strategy
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Strategy',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Chip(
-                    label: Text(
-                      'Volatility: ${strategy.volatilityLevel.toUpperCase()}',
-                    ),
-                    backgroundColor: _getVolatilityColor(strategy.volatilityLevel),
-                  ),
-                  const SizedBox(height: 12),
-                  if (strategy.recommendations.isNotEmpty) ...[
-                    Text(
-                      'Recommendations',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...strategy.recommendations.map((rec) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.check_circle,
-                                  color: ColorPalette.success, size: 20),
-                              const SizedBox(width: 8),
-                              Expanded(child: Text(rec)),
-                            ],
-                          ),
-                        )),
-                  ],
-                  if (strategy.actionItems.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    Text(
-                      'Action Items',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
+                    if (strategy.recommendations.isNotEmpty) ...[
+                      Text(
+                        'Recommendations',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: theme.colorScheme.onSurface,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...strategy.actionItems.map((item) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.play_arrow,
-                                  color: ColorPalette.info, size: 20),
-                              const SizedBox(width: 8),
-                              Expanded(child: Text(item)),
-                            ],
-                          ),
-                        )),
+                      const SizedBox(height: 8),
+                      ...strategy.recommendations.map((rec) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  color: theme.colorScheme.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    rec,
+                                    style: TextStyle(
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                    ],
+                    if (strategy.actionItems.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        'Action Items',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...strategy.actionItems.map((item) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.play_arrow,
+                                  color: theme.colorScheme.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    item,
+                                    style: TextStyle(
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
+            ]),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -659,32 +956,37 @@ class _LeanWeekPageState extends State<LeanWeekPage>
     Color color,
   ) {
     final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.1),
         ),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -715,47 +1017,77 @@ class _LeanWeekPageState extends State<LeanWeekPage>
     final isLean = period.isLeanPeriod;
     final isRisk = period.balanceAtRisk;
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      color: isRisk
-          ? ColorPalette.errorLight
-          : isLean
-              ? ColorPalette.warningLight
-              : null,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Month ${period.period}',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
+      decoration: BoxDecoration(
+        color: isRisk
+            ? theme.colorScheme.error.withOpacity(0.1)
+            : isLean
+                ? theme.colorScheme.error.withOpacity(0.05)
+                : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isRisk
+              ? theme.colorScheme.error.withOpacity(0.3)
+              : isLean
+                  ? theme.colorScheme.error.withOpacity(0.2)
+                  : theme.colorScheme.outline.withOpacity(0.1),
+        ),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Month ${period.period}',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              if (isLean)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.error.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Lean Period',
+                    style: TextStyle(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
-                if (isLean)
-                  Chip(
-                    label: const Text('Lean Period'),
-                    backgroundColor: ColorPalette.warningLight,
+              if (isRisk)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.error.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                if (isRisk)
-                  Chip(
-                    label: const Text('At Risk'),
-                    backgroundColor: ColorPalette.errorLight,
+                  child: Text(
+                    'At Risk',
+                    style: TextStyle(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _buildScenarioRow('Best', period.netCashFlow.best, ColorPalette.success),
-            _buildScenarioRow('Likely', period.netCashFlow.likely, ColorPalette.info),
-            _buildScenarioRow('Worst', period.netCashFlow.worst, ColorPalette.error),
-          ],
-        ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildScenarioRow('Best', period.netCashFlow.best, theme.colorScheme.primary),
+          _buildScenarioRow('Likely', period.netCashFlow.likely, theme.colorScheme.primary),
+          _buildScenarioRow('Worst', period.netCashFlow.worst, theme.colorScheme.error),
+        ],
       ),
     );
   }
@@ -806,16 +1138,16 @@ class _LeanWeekPageState extends State<LeanWeekPage>
     );
   }
 
-  Color _getRiskColor(String riskLevel) {
+  Color _getRiskColor(String riskLevel, ThemeData theme) {
     switch (riskLevel.toUpperCase()) {
       case 'LOW':
-        return ColorPalette.success;
+        return theme.colorScheme.primary;
       case 'MODERATE':
-        return ColorPalette.warning;
+        return theme.colorScheme.error;
       case 'HIGH':
-        return ColorPalette.error;
+        return theme.colorScheme.error;
       default:
-        return Colors.grey;
+        return theme.colorScheme.onSurface.withOpacity(0.5);
     }
   }
 
@@ -832,17 +1164,43 @@ class _LeanWeekPageState extends State<LeanWeekPage>
     }
   }
 
-  Color _getVolatilityColor(String level) {
+  Color _getVolatilityColor(String level, ThemeData theme) {
     switch (level.toLowerCase()) {
       case 'low':
-        return ColorPalette.successLight;
+        return theme.colorScheme.primary.withOpacity(0.2);
       case 'medium':
-        return ColorPalette.warningLight;
+        return theme.colorScheme.error.withOpacity(0.2);
       case 'high':
-        return ColorPalette.errorLight;
+        return theme.colorScheme.error.withOpacity(0.3);
       default:
-        return Colors.grey.withOpacity(0.2);
+        return theme.colorScheme.surface.withOpacity(0.5);
     }
+  }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+
+  _SliverAppBarDelegate(this.tabBar);
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return false;
   }
 }
 

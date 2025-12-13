@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/features/auth/presentation/pages/home_page.dart';
-import '../../../../core/navigation/main_navigator.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -20,6 +18,17 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Clear form fields when page is shown (e.g., after logout)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _emailController.clear();
+      _passwordController.clear();
+      _formKey.currentState?.reset();
+    });
+  }
 
   @override
   void dispose() {
@@ -66,11 +75,9 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             );
-          } else if (state is AuthAuthenticated) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const HomePage()),
-            );
           }
+          // Note: Navigation to MainNavigator is handled by AuthWrapper in main.dart
+          // No need to navigate here - AuthWrapper will automatically rebuild and show MainNavigator
         },
         builder: (context, state) {
           final isLoading = state is AuthLoading;

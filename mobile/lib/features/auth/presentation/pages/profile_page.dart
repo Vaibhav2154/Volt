@@ -15,7 +15,6 @@ import '../../../sms/presentation/pages/transactions_page.dart' as sms_transacti
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
-import 'login_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -297,12 +296,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                   onPressed: () {
                                     Navigator.of(dialogContext).pop();
                                     context.read<AuthBloc>().add(LogoutEvent());
-                                    Navigator.of(context).pushAndRemoveUntil(
-                                      MaterialPageRoute(
-                                        builder: (_) => const LoginPage(),
-                                      ),
-                                      (route) => false,
-                                    );
+                                    // Navigation is handled by AuthWrapper in main.dart
+                                    // No need for manual navigation here
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: theme.colorScheme.error,
