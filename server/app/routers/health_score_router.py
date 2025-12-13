@@ -28,7 +28,6 @@ from app.schemas.timeline_schema import (
     WelfordCalculation
 )
 from app.services.lean_week_predictor import LeanWeekPredictor
-from app.services.income_forecast import IncomeForecastService
 from app.models.transactions import Transaction
 from app.models.user import User
 
@@ -111,7 +110,6 @@ def get_financial_health_score(
     
     # Get services
     predictor = LeanWeekPredictor()
-    forecast_service = IncomeForecastService()
     
     # Get historical data
     monthly_flow = predictor.get_monthly_cash_flow(db, user_id, months=6)
@@ -119,10 +117,14 @@ def get_financial_health_score(
     if not monthly_flow:
         raise HTTPException(status_code=404, detail="Not enough transaction data to calculate health score")
     
-    # Calculate income volatility
+    # Calculate income volatility (coefficient of variation)
     incomes = [m['income'] for m in monthly_flow if m['income'] > 0]
     avg_income = statistics.mean(incomes) if incomes else 1
-    volatility = forecast_service.calculate_income_volatility(db, user_id)
+    if len(incomes) > 1 and avg_income > 0:
+        income_std = statistics.stdev(incomes)
+        volatility = income_std / avg_income
+    else:
+        volatility = 0.0
     
     # Calculate component scores (0-100 each)
     
@@ -324,7 +326,6 @@ def get_animated_timeline(
         raise HTTPException(status_code=403, detail="Not authorized")
     
     predictor = LeanWeekPredictor()
-    forecast_service = IncomeForecastService()
     
     # Get historical data
     if timeline_type == 'monthly':
@@ -375,6 +376,18 @@ def get_animated_timeline(
     total_expenses = sum(p.expenses for p in historical_periods)
     net_flows = [p.net_flow for p in historical_periods]
     
+    # Calculate income volatility (coefficient of variation)
+    incomes = [p.income for p in historical_periods if p.income > 0]
+    if len(incomes) > 1:
+        avg_income = statistics.mean(incomes)
+        if avg_income > 0:
+            income_std = statistics.stdev(incomes)
+            volatility = income_std / avg_income
+        else:
+            volatility = 0.0
+    else:
+        volatility = 0.0
+    
     statistics_data = TimelineStatistics(
         total_income=total_income,
         total_expenses=total_expenses,
@@ -382,7 +395,7 @@ def get_animated_timeline(
         avg_net_flow=statistics.mean(net_flows) if net_flows else 0,
         lean_period_count=len(lean_analysis['lean_periods']),
         lean_frequency=lean_analysis['lean_frequency'],
-        volatility=forecast_service.calculate_income_volatility(db, user_id)
+        volatility=volatility
     )
     
     # Calculate Welford's statistics (for demo/education)

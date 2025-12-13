@@ -19,12 +19,22 @@ logger.setLevel(logging.INFO)
 
 router = APIRouter(prefix="/twilio", tags=["Twilio Webhooks"])
 
-# Initialize Twilio client
-twilio_client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
+# Initialize Twilio client only if credentials are provided
+def get_twilio_client():
+    """Get Twilio client if credentials are configured, otherwise return None"""
+    if settings.twilio_account_sid and settings.twilio_auth_token:
+        return Client(settings.twilio_account_sid, settings.twilio_auth_token)
+    return None
+
+twilio_client = get_twilio_client()
 
 
 def send_whatsapp_message(to: str, body: str):
     """Send a WhatsApp message via Twilio"""
+    if not twilio_client:
+        logger.warning("⚠️ Twilio not configured - cannot send WhatsApp message")
+        return None
+    
     try:
         logger.info(f"📱 Sending WhatsApp message to {to}")
         message = twilio_client.messages.create(
@@ -230,6 +240,15 @@ async def process_media_ocr(from_number: str, media_url: str, content_type: str)
             return
         
         # Download media from Twilio (follow redirects to CDN)
+        if not settings.twilio_account_sid or not settings.twilio_auth_token:
+            logger.error("❌ Twilio credentials not configured")
+            send_whatsapp_message(
+                from_number,
+                "❌ *Service Unavailable*\n\n"
+                "Twilio service is not configured. Please contact support."
+            )
+            return
+        
         auth = (settings.twilio_account_sid, settings.twilio_auth_token)
         
         async with httpx.AsyncClient(follow_redirects=True) as client:

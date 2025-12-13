@@ -27,11 +27,11 @@ class Settings(BaseSettings):
     # Worker configuration
     default_user_id: int = 1
     
-    # Twilio configuration
-    twilio_account_sid: str
-    twilio_auth_token: str
-    twilio_whatsapp_from: str
-    twilio_content_sid: str
+    # Twilio configuration (optional - defaults to empty strings if not configured)
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_whatsapp_from: str = ""
+    twilio_content_sid: str = ""
     
     @property
     def redis_url(self) -> str:
