@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_pallette.dart';
+import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../domain/entities/transaction.dart';
 import '../bloc/sms_bloc.dart';
 import '../bloc/sms_event.dart';
@@ -52,11 +54,46 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ),
         ),
         actions: [
+          BlocBuilder<SmsBloc, SmsState>(
+            builder: (context, state) {
+              final hasTransactions = state is SmsTransactionsLoaded && 
+                                     state.transactions.isNotEmpty;
+              return IconButton(
+                icon: Icon(
+                  Icons.cloud_upload_outlined,
+                  color: hasTransactions 
+                      ? theme.colorScheme.primary 
+                      : theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
+                tooltip: hasTransactions 
+                    ? 'Sync to Database (Auto-sync is active)' 
+                    : 'No transactions to sync',
+                onPressed: hasTransactions ? () {
+                  final currentState = context.read<SmsBloc>().state;
+                  if (currentState is SmsTransactionsLoaded && 
+                      currentState.transactions.isNotEmpty) {
+                    // Get user ID from auth
+                    final authBloc = context.read<AuthBloc>();
+                    if (authBloc.state is AuthAuthenticated) {
+                      final user = (authBloc.state as AuthAuthenticated).user;
+                      context.read<SmsBloc>().add(
+                        SyncTransactionsEvent(
+                          userId: user.id,
+                          transactions: currentState.transactions,
+                        ),
+                      );
+                    }
+                  }
+                } : null,
+              );
+            },
+          ),
           IconButton(
             icon: Icon(
               Icons.refresh,
               color: theme.colorScheme.onSurface,
             ),
+            tooltip: 'Refresh',
             onPressed: () {
               context.read<SmsBloc>().add(RefreshTransactionsEvent());
             },
@@ -70,22 +107,53 @@ class _TransactionsPageState extends State<TransactionsPage> {
               SnackBar(
                 content: Text(state.message),
                 backgroundColor: theme.colorScheme.error,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            );
+          } else if (state is SmsSynced) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('✅ Synced ${state.syncedCount} transaction${state.syncedCount != 1 ? 's' : ''} to database'),
+                backgroundColor: ColorPalette.success,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                duration: const Duration(seconds: 2),
               ),
             );
           }
         },
         builder: (context, state) {
-          if (state is SmsLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
+          if (state is SmsLoading || state is SmsSyncing) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(
+                    state is SmsSyncing ? 'Syncing transactions...' : 'Loading transactions...',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
             );
           } else if (state is SmsPermissionDenied) {
             return _buildPermissionDeniedView(context, theme);
-          } else if (state is SmsTransactionsLoaded) {
-            if (state.transactions.isEmpty) {
+          } else if (state is SmsTransactionsLoaded || state is SmsSynced) {
+            final transactions = state is SmsTransactionsLoaded 
+                ? state.transactions 
+                : (state as SmsSynced).transactions;
+            if (transactions.isEmpty) {
               return const EmptyTransactionsView();
             }
-            return _buildTransactionsList(state.transactions, theme);
+            return _buildTransactionsList(transactions, theme);
           }
 
           return const Center(

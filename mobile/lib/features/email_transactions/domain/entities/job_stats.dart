@@ -19,3 +19,4 @@ class JobStats extends Equatable {
 
 
 
+

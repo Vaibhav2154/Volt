@@ -48,3 +48,4 @@ class ManualEmailJobResponseModel extends ManualEmailJobResponse {
 
 
 
+

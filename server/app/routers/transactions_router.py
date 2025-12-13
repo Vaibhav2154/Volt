@@ -79,7 +79,7 @@ async def create_multiple_transactions(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Session = Depends(get_db)
 ):
-    """Create multiple transactions at once with automatic categorization."""
+    """Create multiple transactions at once with automatic categorization and deduplication."""
     # Verify all transactions belong to the current user
     for transaction in transactions:
         if transaction.user_id != current_user.id:
@@ -88,16 +88,72 @@ async def create_multiple_transactions(
                 detail="Not authorized to create transactions for another user"
             )
     
-    # Create all transactions
-    new_transactions = [Transaction(**t.model_dump()) for t in transactions]
+    # Deduplication: Check for existing transactions
+    new_transactions = []
+    skipped_count = 0
+    
+    for transaction_data in transactions:
+        # Check if transaction already exists
+        # First try to match by transactionId if available
+        existing = None
+        if transaction_data.transactionId:
+            existing = db.query(Transaction).filter(
+                and_(
+                    Transaction.user_id == current_user.id,
+                    Transaction.transactionId == transaction_data.transactionId
+                )
+            ).first()
+        
+        # If not found by transactionId, check by amount, merchant, timestamp, and type
+        # (within a 5-minute window to account for slight timestamp differences)
+        if not existing and transaction_data.timestamp:
+            from datetime import timedelta
+            time_window_start = transaction_data.timestamp - timedelta(minutes=5)
+            time_window_end = transaction_data.timestamp + timedelta(minutes=5)
+            
+            query = db.query(Transaction).filter(
+                and_(
+                    Transaction.user_id == current_user.id,
+                    Transaction.amount == transaction_data.amount,
+                    Transaction.type == transaction_data.type,
+                    Transaction.timestamp >= time_window_start,
+                    Transaction.timestamp <= time_window_end
+                )
+            )
+            
+            # If merchant is available, also match by merchant
+            if transaction_data.merchant:
+                query = query.filter(Transaction.merchant == transaction_data.merchant)
+            
+            existing = query.first()
+        
+        # If transaction doesn't exist, add it to the list
+        if not existing:
+            new_transactions.append(Transaction(**transaction_data.model_dump()))
+        else:
+            skipped_count += 1
+            print(f"⚠️ Skipping duplicate transaction: {transaction_data.transactionId or 'No ID'} - Amount: {transaction_data.amount}, Type: {transaction_data.type}")
+    
+    if not new_transactions:
+        # All transactions were duplicates
+        return []
+    
+    # Create only new transactions
     db.add_all(new_transactions)
     
-    # Update user savings for each transaction
+    # Update user savings for each new transaction
     for transaction in transactions:
-        if transaction.type == "credit":
-            current_user.savings += transaction.amount
-        elif transaction.type == "debit":
-            current_user.savings -= transaction.amount
+        # Only update savings if this transaction was actually added (not a duplicate)
+        if any(t.amount == transaction.amount and 
+               t.type == transaction.type and 
+               (t.timestamp == transaction.timestamp or 
+                (t.timestamp and transaction.timestamp and 
+                 abs((t.timestamp - transaction.timestamp).total_seconds()) < 300))
+               for t in new_transactions):
+            if transaction.type == "credit":
+                current_user.savings += transaction.amount
+            elif transaction.type == "debit":
+                current_user.savings -= transaction.amount
     
     db.commit()
     
@@ -105,7 +161,9 @@ async def create_multiple_transactions(
     for t in new_transactions:
         db.refresh(t)
     
-    # Award gamification event for bulk import
+    print(f"✅ Created {len(new_transactions)} new transactions, skipped {skipped_count} duplicates")
+    
+    # Award gamification event for bulk import (only for new transactions)
     try:
         gamification = GamificationService(db)
         for _ in new_transactions:
@@ -113,7 +171,7 @@ async def create_multiple_transactions(
     except Exception as e:
         print(f"Error awarding TRANSACTION_IMPORTED events: {str(e)}")
     
-    # Update behavior model for each transaction
+    # Update behavior model for each new transaction
     for t in new_transactions:
         await behavior_engine.update_model(db, t.user_id, t)
     

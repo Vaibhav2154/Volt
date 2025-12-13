@@ -40,3 +40,25 @@ class SmsListening extends SmsState {
   @override
   List<Object?> get props => [transactions];
 }
+
+class SmsSyncing extends SmsState {
+  final List<Transaction> transactions;
+
+  const SmsSyncing(this.transactions);
+
+  @override
+  List<Object?> get props => [transactions];
+}
+
+class SmsSynced extends SmsState {
+  final List<Transaction> transactions;
+  final int syncedCount;
+
+  const SmsSynced({
+    required this.transactions,
+    required this.syncedCount,
+  });
+
+  @override
+  List<Object?> get props => [transactions, syncedCount];
+}

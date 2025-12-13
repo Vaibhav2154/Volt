@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../domain/entities/transaction.dart';
 
 abstract class SmsEvent extends Equatable {
   const SmsEvent();
@@ -33,4 +34,17 @@ class NewIncomingTransactionEvent extends SmsEvent {
   
   @override
   List<Object?> get props => [transaction];
+}
+
+class SyncTransactionsEvent extends SmsEvent {
+  final int userId;
+  final List<Transaction> transactions;
+
+  const SyncTransactionsEvent({
+    required this.userId,
+    required this.transactions,
+  });
+
+  @override
+  List<Object?> get props => [userId, transactions];
 }

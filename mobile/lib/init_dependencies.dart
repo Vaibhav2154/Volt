@@ -23,6 +23,7 @@ import 'features/sms/domain/repositories/sms_repository.dart';
 import 'features/sms/domain/usecases/get_all_transactions_usecase.dart';
 import 'features/sms/domain/usecases/has_sms_permissions_usecase.dart';
 import 'features/sms/domain/usecases/request_sms_permissions_usecase.dart';
+import 'features/sms/domain/usecases/sync_transactions_usecase.dart';
 import 'features/sms/presentation/bloc/sms_bloc.dart';
 import 'features/transactions/data/datasources/transaction_remote_data_source.dart';
 import 'features/transactions/data/datasources/ocr_remote_data_source.dart';
@@ -226,6 +227,7 @@ void _initSms() {
   sl.registerLazySingleton(() => RequestSmsPermissionsUseCase(sl()));
   sl.registerLazySingleton(() => HasSmsPermissionsUseCase(sl()));
   sl.registerLazySingleton(() => GetAllTransactionsUseCase(sl()));
+  sl.registerLazySingleton(() => SyncTransactionsUseCase(sl<TransactionRepository>()));
 
   // BLoC
   sl.registerFactory(
@@ -233,6 +235,7 @@ void _initSms() {
       requestSmsPermissionsUseCase: sl(),
       hasSmsPermissionsUseCase: sl(),
       getAllTransactionsUseCase: sl(),
+      syncTransactionsUseCase: sl(),
     ),
   );
 }
