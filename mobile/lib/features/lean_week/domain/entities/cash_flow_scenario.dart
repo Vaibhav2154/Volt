@@ -20,3 +20,4 @@ class CashFlowScenario extends Equatable {
 
 
 
+

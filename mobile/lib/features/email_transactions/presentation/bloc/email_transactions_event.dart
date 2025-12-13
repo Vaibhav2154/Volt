@@ -88,3 +88,4 @@ class GetHealthStatusEvent extends EmailTransactionsEvent {
 
 
 
+

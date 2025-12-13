@@ -33,3 +33,4 @@ class CategoryAnalysis extends Equatable {
 
 
 
+

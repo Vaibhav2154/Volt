@@ -52,3 +52,4 @@ class IncomeSmoothingRecommendation extends Equatable {
 
 
 
+

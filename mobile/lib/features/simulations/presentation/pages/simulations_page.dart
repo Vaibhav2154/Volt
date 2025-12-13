@@ -80,7 +80,7 @@ class _SimulationsPageState extends State<SimulationsPage>
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
                   return [
                     SliverAppBar(
-                      expandedHeight: 100,
+                      expandedHeight: 120,
                       floating: false,
                       pinned: true,
                       backgroundColor: theme.scaffoldBackgroundColor,
@@ -95,7 +95,7 @@ class _SimulationsPageState extends State<SimulationsPage>
                           ),
                         ),
                         centerTitle: false,
-                        titlePadding: const EdgeInsets.only(left: 16, bottom: 8),
+                        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
                       ),
                     ),
                     SliverPersistentHeader(
@@ -106,6 +106,7 @@ class _SimulationsPageState extends State<SimulationsPage>
                           labelColor: theme.colorScheme.primary,
                           unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.6),
                           indicatorColor: theme.colorScheme.primary,
+                          dividerColor: Colors.transparent,
                           tabs: const [
                             Tab(text: 'Simulate', icon: Icon(Icons.calculate)),
                             Tab(text: 'Compare', icon: Icon(Icons.compare_arrows)),

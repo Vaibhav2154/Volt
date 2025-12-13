@@ -70,22 +70,29 @@ class _DashboardPageState extends State<DashboardPage> {
                   backgroundColor: theme.scaffoldBackgroundColor,
                   elevation: 0,
                   flexibleSpace: FlexibleSpaceBar(
-                    title: Text(
-                      'Volt',
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurface,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 24,
-                      ),
+                    title: Row(
+                      children: [
+                        const SizedBox(width: 12),
+                        Text(
+                          'Volt',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                          ),
+                        ),
+                      ],
                     ),
                     centerTitle: false,
                     titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
                   ),
                   actions: [
                     IconButton(
-                      icon: Icon(
-                        Icons.person_outline,
-                        color: theme.colorScheme.onSurface,
+                      icon: Image.asset(
+                        'assets/logo.png',
+                        height: 64,
+                        width: 64,
+                        // color: theme.colorScheme.onSurface, // Uncomment if you want to add a tint
                       ),
                       onPressed: () {
                         Navigator.of(context).push(
@@ -103,11 +110,11 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Welcome section
+                        const SizedBox(height: 16),
                         Text(
                           'Welcome back,',
                           style: TextStyle(

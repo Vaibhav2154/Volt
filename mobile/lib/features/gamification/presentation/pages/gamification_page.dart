@@ -107,6 +107,7 @@ class _GamificationPageState extends State<GamificationPage>
                     indicatorColor: ColorPalette.green400,
                     labelColor: ColorPalette.green400,
                     unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.5),
+                    dividerColor: Colors.transparent,
                     labelStyle: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
