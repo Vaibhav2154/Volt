@@ -24,7 +24,20 @@ class JobQueue:
             redis_url: Redis connection URL (e.g., redis://localhost:6379/0)
             queue_name: Name of the queue
         """
-        self.redis_client = redis.from_url(redis_url, decode_responses=True)
+        # Configure SSL for Heroku Redis (uses self-signed certificates)
+        import ssl
+        ssl_params = {}
+        if redis_url.startswith('rediss://'):  # SSL Redis connection
+            ssl_params = {
+                'ssl_cert_reqs': ssl.CERT_NONE,  # Don't verify SSL certificates (Heroku uses self-signed)
+                'ssl_check_hostname': False
+            }
+        
+        self.redis_client = redis.from_url(
+            redis_url, 
+            decode_responses=True,
+            **ssl_params
+        )
         self.queue_name = queue_name
         self.processing_queue = f"{queue_name}:processing"
         self.failed_queue = f"{queue_name}:failed"
