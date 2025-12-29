@@ -226,6 +226,7 @@ volt/
 │   │   ├── GAMIFICATION.md
 │   │   ├── LEAN_WEEK_PREDICTOR_README.md
 │   │   └── USER_EMAIL_PARSING_GUIDE.md
+│   ├── WHATSAPP_INTEGRATION.md    # WhatsApp setup guide
 │   ├── Dockerfile                 # Main API container
 │   ├── Dockerfile.worker          # Transaction worker container
 │   ├── Dockerfile.poller          # Email poller container
@@ -236,7 +237,6 @@ volt/
 │
 ├── HEROKU_DEPLOYMENT.md           # Heroku deployment guide
 ├── WELFORD.md                     # Welford's algorithm documentation
-├── WHATSAPP_INTEGRATION.md        # WhatsApp setup guide
 ├── LICENSE                        # MIT License
 └── README.md                      # This file
 ```
@@ -688,7 +688,7 @@ Get financial insights directly in WhatsApp:
 
 **Setup:**
 Requires Twilio account with WhatsApp Business API access.
-See [WHATSAPP_INTEGRATION.md](server/WHATSAPP_INTEGRATION.md) for setup instructions.
+See [server/WHATSAPP_INTEGRATION.md](server/WHATSAPP_INTEGRATION.md) for setup instructions.
 
 ### Financial Health Score
 
