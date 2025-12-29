@@ -5,7 +5,7 @@
 **A comprehensive AI-powered finance and expense tracker designed for modern users, especially gig workers and freelancers with variable income**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Flutter](https://img.shields.io/badge/Flutter-3.10+-blue.svg)](https://flutter.dev/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.123+-green.svg)](https://fastapi.tiangolo.com/)
 
@@ -250,7 +250,7 @@ volt/
 Before you begin, ensure you have the following installed:
 
 #### For Backend Development
-- **Python 3.8+** - [Download](https://www.python.org/downloads/)
+- **Python 3.9+** - [Download](https://www.python.org/downloads/)
 - **PostgreSQL 12+** - [Download](https://www.postgresql.org/download/)
 - **Redis** (optional for local development) - [Download](https://redis.io/download)
 - **Git** - [Download](https://git-scm.com/downloads/)
